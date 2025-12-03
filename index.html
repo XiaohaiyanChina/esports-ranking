@@ -1,0 +1,3528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电竞大师 - 专业电竞数据平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 基础样式 - 深蓝色与紫色主题 */
+        :root {
+            --primary-dark: #0a0e29;
+            --secondary-dark: #111742;
+            --accent-purple: #8a2be2;
+            --accent-blue: #4169e1;
+            --accent-cyan: #00d4ff;
+            --text-light: #ffffff;
+            --text-gray: #b0b0b0;
+            --card-bg: #1a1f4a;
+            --border-color: #2d357a;
+            --success: #00cc66;
+            --warning: #ffaa00;
+            --danger: #ff4757;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: var(--primary-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 20% 30%, rgba(65, 105, 225, 0.15) 0%, transparent 20%),
+                              radial-gradient(circle at 80% 70%, rgba(138, 43, 226, 0.15) 0%, transparent 20%);
+        }
+        
+        /* 导航栏 */
+        .navbar {
+            background-color: var(--secondary-dark);
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+            border-bottom: 2px solid var(--accent-purple);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+        }
+        
+        .logo-icon {
+            color: var(--accent-purple);
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 10px;
+        }
+        
+        .nav-link {
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: var(--accent-purple);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .nav-link i {
+            font-size: 18px;
+        }
+        
+        /* 主内容区域 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 通用卡片样式 */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(138, 43, 226, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: var(--border-color);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        
+        /* 首页 - 赛事中心 */
+        .matches-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-purple);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .match-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--accent-purple);
+        }
+        
+        .match-item.upcoming {
+            border-left-color: var(--accent-blue);
+        }
+        
+        .match-item.past {
+            border-left-color: var(--text-gray);
+        }
+        
+        .match-teams {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        
+        .team-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .match-score {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            padding: 0 20px;
+        }
+        
+        .match-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        
+        .match-time {
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        
+        .match-event {
+            background-color: var(--accent-purple);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        /* 战队页面 */
+        .team-rankings {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .team-card {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .team-rank {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: var(--accent-purple);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .team-card-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .team-logo-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .team-info h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--accent-cyan);
+        }
+        
+        .team-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-purple);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+        
+        /* 战队详情页 */
+        .team-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .team-players {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .player-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .player-card:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-5px);
+        }
+        
+        .player-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .player-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .player-realname {
+            color: var(--text-gray);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .player-role {
+            font-size: 14px;
+            color: var(--text-gray);
+            margin-bottom: 10px;
+        }
+        
+        .player-rating {
+            color: var(--accent-cyan);
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .achievements-list {
+            list-style-type: none;
+            margin-top: 15px;
+        }
+        
+        .achievements-list li {
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* 选手页面 */
+        .player-rankings {
+            margin-top: 20px;
+        }
+        
+        .player-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .player-table th {
+            text-align: left;
+            padding: 15px;
+            background-color: rgba(138, 43, 226, 0.2);
+            border-bottom: 2px solid var(--accent-purple);
+            color: var(--accent-cyan);
+        }
+        
+        .player-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .player-table tr:hover {
+            background-color: rgba(138, 43, 226, 0.1);
+        }
+        
+        .player-row {
+            cursor: pointer;
+        }
+        
+        .player-rank {
+            width: 60px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--accent-purple);
+        }
+        
+        .player-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .player-table-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .player-table-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 选手详情页 */
+        .player-detail-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .player-profile {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .player-profile-info h2 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            color: var(--accent-cyan);
+        }
+        
+        .player-game-id {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .player-realname-detail {
+            color: var(--text-gray);
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .player-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .player-stat-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .player-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-purple);
+            margin-bottom: 5px;
+        }
+        
+        .player-stat-label {
+            font-size: 14px;
+            color: var(--text-gray);
+        }
+        
+        /* 雷达图容器 */
+        .radar-container {
+            height: 400px;
+            position: relative;
+        }
+        
+        .compare-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .compare-select {
+            flex: 1;
+            margin-right: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+        }
+        
+        /* 管理员页面 */
+        .admin-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .admin-tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-tab.active {
+            color: var(--accent-cyan);
+            border-bottom-color: var(--accent-purple);
+        }
+        
+        .admin-section {
+            display: none;
+        }
+        
+        .admin-section.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--accent-cyan);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: white;
+            font-size: 16px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .stats-sliders {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .slider-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .slider-value {
+            color: var(--accent-purple);
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .image-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .image-upload:hover {
+            border-color: var(--accent-purple);
+            background-color: rgba(138, 43, 226, 0.05);
+        }
+        
+        .image-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .data-list {
+            margin-top: 20px;
+        }
+        
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .data-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        /* 返回按钮 */
+        .back-button {
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--accent-cyan);
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            color: var(--accent-purple);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 992px) {
+            .player-detail-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .team-rankings {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 5px;
+            }
+            
+            .nav-link {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .team-detail-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .stats-sliders {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--secondary-dark);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-purple);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7a1fc9;
+        }
+        
+        /* 工具类 */
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-muted {
+            color: var(--text-gray);
+        }
+        
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+        
+        .d-none {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-trophy logo-icon"></i>
+            <span>电竞大师</span>
+        </div>
+        <ul class="nav-links">
+            <li class="nav-link active" data-page="home">
+                <i class="fas fa-calendar-alt"></i>
+                <span>赛事中心</span>
+            </li>
+            <li class="nav-link" data-page="teams">
+                <i class="fas fa-users"></i>
+                <span>战队排行</span>
+            </li>
+            <li class="nav-link" data-page="players">
+                <i class="fas fa-user"></i>
+                <span>选手排行</span>
+            </li>
+            <li class="nav-link" data-page="admin">
+                <i class="fas fa-cog"></i>
+                <span>管理员</span>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 首页 - 赛事中心 -->
+        <div class="page active" id="home-page">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-calendar-alt"></i> 赛事中心</h2>
+                </div>
+                
+                <div class="matches-tabs">
+                    <div class="tab active" data-tab="today">今日赛程</div>
+                    <div class="tab" data-tab="past">往日赛果</div>
+                    <div class="tab" data-tab="upcoming">未来赛事</div>
+                </div>
+                
+                <div class="tab-content active" id="today-matches">
+                    <!-- 今日赛程将通过JavaScript动态生成 -->
+                </div>
+                
+                <div class="tab-content" id="past-matches">
+                    <!-- 往日赛果将通过JavaScript动态生成 -->
+                </div>
+                
+                <div class="tab-content" id="upcoming-matches">
+                    <!-- 未来赛事将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 战队页面 -->
+        <div class="page" id="teams-page">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-trophy"></i> 战队积分排行榜</h2>
+                    <div class="text-muted">按积分排序 · 点击战队查看详情</div>
+                </div>
+                
+                <div class="team-rankings" id="team-rankings">
+                    <!-- 战队列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 战队详情页面 -->
+        <div class="page" id="team-detail-page">
+            <div class="back-button" id="back-to-teams">
+                <i class="fas fa-arrow-left"></i>
+                <span>返回战队列表</span>
+            </div>
+            
+            <div class="card">
+                <div class="team-detail-header">
+                    <div class="team-logo-large" id="team-detail-logo">DRG</div>
+                    <div>
+                        <h2 id="team-detail-name">龙之队</h2>
+                        <div class="team-stats">
+                            <div class="stat">
+                                <div class="stat-value" id="team-detail-points">1250</div>
+                                <div class="stat-label">积分</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="team-detail-rank">#1</div>
+                                <div class="stat-label">排名</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="team-detail-wins">18</div>
+                                <div class="stat-label">胜场</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="card-title"><i class="fas fa-users"></i> 战队成员</h3>
+                    <div class="team-players" id="team-detail-players">
+                        <!-- 战队成员将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="mt-20">
+                    <h3 class="card-title"><i class="fas fa-award"></i> 战队成就</h3>
+                    <ul class="achievements-list" id="team-achievements">
+                        <!-- 战队成就将通过JavaScript动态生成 -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 选手页面 -->
+        <div class="page" id="players-page">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-chart-line"></i> 选手Rating排行榜</h2>
+                    <div class="text-muted">按Rating排序 · 点击选手查看详情</div>
+                </div>
+                
+                <div class="player-rankings">
+                    <table class="player-table">
+                        <thead>
+                            <tr>
+                                <th width="60">排名</th>
+                                <th>选手</th>
+                                <th width="120">战队</th>
+                                <th width="100">Rating</th>
+                                <th width="100">年龄</th>
+                            </tr>
+                        </thead>
+                        <tbody id="players-table-body">
+                            <!-- 选手列表将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 选手详情页面 -->
+        <div class="page" id="player-detail-page">
+            <div class="back-button" id="back-to-players">
+                <i class="fas fa-arrow-left"></i>
+                <span>返回选手列表</span>
+            </div>
+            
+            <div class="card">
+                <div class="player-profile">
+                    <div class="player-avatar" id="player-detail-avatar">
+                        <!-- 选手头像将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="player-profile-info">
+                        <div class="player-game-id" id="player-detail-game-id">DragonFire</div>
+                        <div class="player-realname-detail" id="player-detail-realname">张明</div>
+                        <div class="text-muted" id="player-detail-team">所属战队</div>
+                        <div class="player-stats-grid">
+                            <div class="player-stat-item">
+                                <div class="player-stat-value" id="player-detail-age">22</div>
+                                <div class="player-stat-label">年龄</div>
+                            </div>
+                            <div class="player-stat-item">
+                                <div class="player-stat-value" id="player-detail-rating">1.25</div>
+                                <div class="player-stat-label">Rating</div>
+                            </div>
+                            <div class="player-stat-item">
+                                <div class="player-stat-value" id="player-detail-gender">男</div>
+                                <div class="player-stat-label">性别</div>
+                            </div>
+                            <div class="player-stat-item">
+                                <div class="player-stat-value" id="player-detail-position">狙击手</div>
+                                <div class="player-stat-label">位置</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="player-detail-container">
+                    <div>
+                        <h3 class="card-title"><i class="fas fa-chart-radar"></i> 能力雷达图</h3>
+                        <div class="radar-container">
+                            <canvas id="player-radar-chart"></canvas>
+                        </div>
+                        
+                        <div class="compare-controls">
+                            <select class="compare-select" id="compare-player-select">
+                                <option value="">选择对比选手</option>
+                                <!-- 对比选手选项将通过JavaScript动态生成 -->
+                            </select>
+                            <button class="btn btn-primary" id="compare-btn">
+                                <i class="fas fa-balance-scale"></i>
+                                <span>对比</span>
+                            </button>
+                            <button class="btn btn-secondary" id="clear-comparison">
+                                <i class="fas fa-times"></i>
+                                <span>清除</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="card-title"><i class="fas fa-list-ol"></i> 详细数据</h3>
+                        <div class="player-stats-grid" id="player-detailed-stats">
+                            <!-- 详细数据将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理员页面 -->
+        <div class="page" id="admin-page">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-cog"></i> 管理员后台</h2>
+                    <div class="text-muted">所有数据均可在此编辑 · 数据自动保存到本地</div>
+                </div>
+                
+                <div class="admin-tabs">
+                    <div class="admin-tab active" data-admin-tab="matches">赛事管理</div>
+                    <div class="admin-tab" data-admin-tab="teams">战队管理</div>
+                    <div class="admin-tab" data-admin-tab="players">选手管理</div>
+                    <div class="admin-tab" data-admin-tab="data">数据管理</div>
+                </div>
+                
+                <!-- 赛事管理 -->
+                <div class="admin-section active" id="matches-admin">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">赛事类型</label>
+                            <select class="form-control" id="match-type">
+                                <option value="today">今日赛程</option>
+                                <option value="past">往日赛果</option>
+                                <option value="upcoming">未来赛事</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">赛事名称</label>
+                            <input type="text" class="form-control" id="match-event" placeholder="例如：2023全球总决赛">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">队伍 A</label>
+                            <select class="form-control" id="team-a-select">
+                                <!-- 战队选项将通过JavaScript动态生成 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">队伍 B</label>
+                            <select class="form-control" id="team-b-select">
+                                <!-- 战队选项将通过JavaScript动态生成 -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">比分 (A队)</label>
+                            <input type="number" class="form-control" id="team-a-score" min="0" placeholder="例如：2">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">比分 (B队)</label>
+                            <input type="number" class="form-control" id="team-b-score" min="0" placeholder="例如：1">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">比赛时间</label>
+                        <input type="datetime-local" class="form-control" id="match-time">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-primary" id="add-match-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>添加赛事</span>
+                        </button>
+                        <button class="btn btn-secondary" id="update-match-btn" style="display: none;">
+                            <i class="fas fa-save"></i>
+                            <span>更新赛事</span>
+                        </button>
+                        <button class="btn btn-secondary" id="cancel-edit-match">
+                            <i class="fas fa-times"></i>
+                            <span>取消</span>
+                        </button>
+                    </div>
+                    
+                    <div class="data-list" id="matches-list">
+                        <!-- 赛事列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 战队管理 -->
+                <div class="admin-section" id="teams-admin">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">战队名称</label>
+                            <input type="text" class="form-control" id="team-name" placeholder="例如：龙之队">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">战队简称</label>
+                            <input type="text" class="form-control" id="team-short-name" placeholder="例如：DRG">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">积分</label>
+                            <input type="number" class="form-control" id="team-points" min="0" placeholder="例如：1250">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">胜场</label>
+                            <input type="number" class="form-control" id="team-wins" min="0" placeholder="例如：18">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">战队Logo</label>
+                        <div class="image-upload" id="team-logo-upload">
+                            <div class="image-preview" id="team-logo-preview">
+                                <i class="fas fa-image" style="font-size: 40px; color: var(--text-gray);"></i>
+                            </div>
+                            <div class="text-muted">点击上传战队Logo (建议尺寸: 200x200)</div>
+                            <input type="file" id="team-logo-input" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">战队成就 (每行一个)</label>
+                        <textarea class="form-control" id="team-achievements-input" rows="4" placeholder="例如：
+2023年春季赛冠军
+2022年全球总决赛亚军
+2021年夏季赛冠军"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-primary" id="add-team-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>添加战队</span>
+                        </button>
+                        <button class="btn btn-secondary" id="update-team-btn" style="display: none;">
+                            <i class="fas fa-save"></i>
+                            <span>更新战队</span>
+                        </button>
+                        <button class="btn btn-secondary" id="cancel-edit-team">
+                            <i class="fas fa-times"></i>
+                            <span>取消</span>
+                        </button>
+                    </div>
+                    
+                    <div class="data-list" id="teams-list">
+                        <!-- 战队列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 选手管理 -->
+                <div class="admin-section" id="players-admin">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">游戏ID (显示在前)</label>
+                            <input type="text" class="form-control" id="player-game-id" placeholder="例如：DragonFire">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">真实姓名 (显示在后)</label>
+                            <input type="text" class="form-control" id="player-realname" placeholder="例如：张明">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">所属战队</label>
+                            <select class="form-control" id="player-team-select">
+                                <!-- 战队选项将通过JavaScript动态生成 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">位置/角色</label>
+                            <select class="form-control" id="player-position">
+                                <option value="狙击手">狙击手</option>
+                                <option value="突破手">突破手</option>
+                                <option value="辅助">辅助</option>
+                                <option value="指挥">指挥</option>
+                                <option value="自由人">自由人</option>
+                                <option value="教练">教练</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">年龄</label>
+                            <input type="number" class="form-control" id="player-age" min="16" max="40" placeholder="例如：22">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">性别</label>
+                            <select class="form-control" id="player-gender">
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">选手头像</label>
+                        <div class="image-upload" id="player-avatar-upload">
+                            <div class="image-preview" id="player-avatar-preview">
+                                <i class="fas fa-user" style="font-size: 40px; color: var(--text-gray);"></i>
+                            </div>
+                            <div class="text-muted">点击上传选手头像 (建议尺寸: 200x200)</div>
+                            <input type="file" id="player-avatar-input" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Rating (精确到小数点后两位)</label>
+                        <input type="number" class="form-control" id="player-rating" min="0" max="3.0" step="0.01" placeholder="例如：1.25">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">能力值 (0-100)</label>
+                        <div class="stats-sliders">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Firepower</span>
+                                    <span class="slider-value" id="firepower-value">85</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="85" class="slider" id="firepower-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Entrying</span>
+                                    <span class="slider-value" id="entrying-value">78</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="78" class="slider" id="entrying-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Trading</span>
+                                    <span class="slider-value" id="trading-value">82</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="82" class="slider" id="trading-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Opening</span>
+                                    <span class="slider-value" id="opening-value">76</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="76" class="slider" id="opening-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Clutching</span>
+                                    <span class="slider-value" id="clutching-value">90</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="90" class="slider" id="clutching-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Sniping</span>
+                                    <span class="slider-value" id="sniping-value">88</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="88" class="slider" id="sniping-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Utility</span>
+                                    <span class="slider-value" id="utility-value">72</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="72" class="slider" id="utility-slider">
+                            </div>
+                            
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <span>Teamwork</span>
+                                    <span class="slider-value" id="teamwork-value">80</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="80" class="slider" id="teamwork-slider">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-primary" id="add-player-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>添加选手</span>
+                        </button>
+                        <button class="btn btn-secondary" id="update-player-btn" style="display: none;">
+                            <i class="fas fa-save"></i>
+                            <span>更新选手</span>
+                        </button>
+                        <button class="btn btn-secondary" id="cancel-edit-player">
+                            <i class="fas fa-times"></i>
+                            <span>取消</span>
+                        </button>
+                    </div>
+                    
+                    <div class="data-list" id="players-list">
+                        <!-- 选手列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 数据管理 -->
+                <div class="admin-section" id="data-admin">
+                    <h3 class="card-title"><i class="fas fa-database"></i> 数据管理</h3>
+                    <p class="text-muted">所有数据自动保存到浏览器本地存储，即使关闭浏览器也不会丢失。</p>
+                    
+                    <div class="player-stats-grid">
+                        <div class="player-stat-item">
+                            <div class="player-stat-value" id="data-teams-count">0</div>
+                            <div class="player-stat-label">战队数量</div>
+                        </div>
+                        <div class="player-stat-item">
+                            <div class="player-stat-value" id="data-players-count">0</div>
+                            <div class="player-stat-label">选手数量</div>
+                        </div>
+                        <div class="player-stat-item">
+                            <div class="player-stat-value" id="data-matches-count">0</div>
+                            <div class="player-stat-label">赛事数量</div>
+                        </div>
+                        <div class="player-stat-item">
+                            <div class="player-stat-value" id="data-storage-size">0 KB</div>
+                            <div class="player-stat-label">存储空间</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-20">
+                        <label class="form-label">数据备份与恢复</label>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" id="export-data-btn">
+                                <i class="fas fa-file-export"></i>
+                                <span>导出数据备份</span>
+                            </button>
+                            <label class="btn btn-secondary" style="cursor: pointer;">
+                                <i class="fas fa-file-import"></i>
+                                <span>导入数据备份</span>
+                                <input type="file" id="import-data-input" accept=".json" style="display: none;">
+                            </label>
+                            <button class="btn btn-danger" id="clear-data-btn">
+                                <i class="fas fa-trash-alt"></i>
+                                <span>清空所有数据</span>
+                            </button>
+                        </div>
+                        <div class="text-muted" style="margin-top: 10px; font-size: 14px;">
+                            导出文件为JSON格式，可在其他设备或浏览器中导入使用。
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-20">
+                        <label class="form-label">默认数据</label>
+                        <div>
+                            <button class="btn btn-secondary" id="load-default-data-btn">
+                                <i class="fas fa-redo"></i>
+                                <span>恢复默认数据</span>
+                            </button>
+                            <div class="text-muted" style="margin-top: 10px; font-size: 14px;">
+                                恢复初始的示例数据，当前数据将被覆盖。
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-20">
+                        <label class="form-label">存储信息</label>
+                        <div class="text-muted" style="font-size: 14px; line-height: 1.6;">
+                            • 数据存储位置：浏览器本地存储 (localStorage)<br>
+                            • 存储容量：约 5-10MB<br>
+                            • 存储位置：不会上传到服务器，仅在本地保存<br>
+                            • 清除数据：清除浏览器缓存或使用"清空所有数据"按钮
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 数据存储配置 ==========
+        const STORAGE_KEY = 'esports_ranking_data_v2';
+        const DATA_VERSION = '2.0';
+        
+        // ========== 核心数据模型 ==========
+        let appData = {
+            version: DATA_VERSION,
+            lastUpdated: new Date().toISOString(),
+            teams: [],
+            players: [],
+            matches: {
+                today: [],
+                past: [],
+                upcoming: []
+            },
+            images: {}
+        };
+        
+        // 当前选中的ID
+        let currentTeamId = null;
+        let currentPlayerId = null;
+        let editingMatchId = null;
+        let editingTeamId = null;
+        let editingPlayerId = null;
+        
+        // 雷达图实例
+        let radarChart = null;
+        
+        // ========== 数据持久化函数 ==========
+        
+        // 保存所有数据到localStorage
+        function saveDataToStorage() {
+            try {
+                // 更新最后修改时间
+                appData.lastUpdated = new Date().toISOString();
+                
+                // 计算存储大小
+                const dataString = JSON.stringify(appData);
+                const dataSize = new Blob([dataString]).size;
+                
+                // 检查存储空间是否足够
+                if (dataSize > 4 * 1024 * 1024) { // 4MB警告
+                    console.warn('数据大小超过4MB，建议减少图片数据');
+                }
+                
+                // 保存到localStorage
+                localStorage.setItem(STORAGE_KEY, dataString);
+                console.log('数据已保存到本地存储，大小:', (dataSize / 1024).toFixed(2), 'KB');
+                
+                // 更新数据统计显示
+                updateDataStats();
+                
+                return true;
+            } catch (error) {
+                console.error('保存数据失败:', error);
+                if (error.name === 'QuotaExceededError') {
+                    alert('本地存储空间不足！建议：\n1. 删除部分图片数据\n2. 导出备份后清空数据\n3. 减少赛事记录数量');
+                }
+                return false;
+            }
+        }
+        
+        // 从localStorage加载数据
+        function loadDataFromStorage() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    
+                    // 检查数据版本
+                    if (parsedData.version === DATA_VERSION) {
+                        // 恢复数据
+                        appData.teams = parsedData.teams || [];
+                        appData.players = parsedData.players || [];
+                        appData.matches = parsedData.matches || { today: [], past: [], upcoming: [] };
+                        appData.images = parsedData.images || {};
+                        appData.lastUpdated = parsedData.lastUpdated || new Date().toISOString();
+                        
+                        console.log('本地数据加载成功');
+                        return true;
+                    } else {
+                        console.log('数据版本不匹配，使用默认数据');
+                        return false;
+                    }
+                }
+            } catch (error) {
+                console.error('加载本地数据失败:', error);
+            }
+            return false;
+        }
+        
+        // 初始化应用数据
+        function initializeAppData() {
+            // 先尝试加载本地数据
+            const loaded = loadDataFromStorage();
+            
+            if (!loaded) {
+                // 如果没有本地数据，创建默认数据
+                console.log('无本地数据，创建默认数据');
+                createDefaultData();
+                
+                // 保存默认数据
+                saveDataToStorage();
+            }
+            
+            // 确保数据正确排序
+            appData.teams.sort((a, b) => b.points - a.points);
+            appData.players.sort((a, b) => b.rating - a.rating);
+            
+            // 更新数据统计
+            updateDataStats();
+        }
+        
+        // 创建默认数据
+        function createDefaultData() {
+            // 默认战队数据
+            appData.teams = [
+                {
+                    id: 1,
+                    name: "龙之队",
+                    shortName: "DRG",
+                    points: 1250,
+                    wins: 18,
+                    logo: null,
+                    achievements: [
+                        "2023年春季赛冠军",
+                        "2022年全球总决赛亚军",
+                        "2021年夏季赛冠军"
+                    ],
+                    players: [1, 2, 3, 4, 5, 6]
+                },
+                {
+                    id: 2,
+                    name: "凤凰涅槃",
+                    shortName: "PHX",
+                    points: 1180,
+                    wins: 16,
+                    logo: null,
+                    achievements: [
+                        "2023年夏季赛亚军",
+                        "2022年春季赛冠军"
+                    ],
+                    players: [7, 8, 9, 10, 11, 12]
+                },
+                {
+                    id: 3,
+                    name: "暗夜行者",
+                    shortName: "NYX",
+                    points: 1100,
+                    wins: 14,
+                    logo: null,
+                    achievements: [
+                        "2023年冬季邀请赛冠军"
+                    ],
+                    players: [13, 14, 15, 16, 17, 18]
+                }
+            ];
+            
+            // 默认选手数据
+            appData.players = [
+                // 龙之队选手
+                {
+                    id: 1,
+                    gameId: "DragonFire",
+                    realname: "张明",
+                    teamId: 1,
+                    age: 22,
+                    gender: "男",
+                    position: "狙击手",
+                    rating: 1.32,
+                    avatar: null,
+                    stats: {
+                        firepower: 92,
+                        entrying: 78,
+                        trading: 85,
+                        opening: 82,
+                        clutching: 88,
+                        sniping: 95,
+                        utility: 75,
+                        teamwork: 80
+                    }
+                },
+                {
+                    id: 2,
+                    gameId: "Lightning",
+                    realname: "李华",
+                    teamId: 1,
+                    age: 23,
+                    gender: "男",
+                    position: "突破手",
+                    rating: 1.25,
+                    avatar: null,
+                    stats: {
+                        firepower: 88,
+                        entrying: 92,
+                        trading: 80,
+                        opening: 85,
+                        clutching: 82,
+                        sniping: 76,
+                        utility: 78,
+                        teamwork: 85
+                    }
+                },
+                {
+                    id: 3,
+                    gameId: "Shadow",
+                    realname: "王强",
+                    teamId: 1,
+                    age: 21,
+                    gender: "男",
+                    position: "辅助",
+                    rating: 1.18,
+                    avatar: null,
+                    stats: {
+                        firepower: 76,
+                        entrying: 72,
+                        trading: 85,
+                        opening: 78,
+                        clutching: 80,
+                        sniping: 70,
+                        utility: 90,
+                        teamwork: 92
+                    }
+                },
+                {
+                    id: 4,
+                    gameId: "Storm",
+                    realname: "刘洋",
+                    teamId: 1,
+                    age: 24,
+                    gender: "男",
+                    position: "指挥",
+                    rating: 1.22,
+                    avatar: null,
+                    stats: {
+                        firepower: 80,
+                        entrying: 76,
+                        trading: 88,
+                        opening: 82,
+                        clutching: 85,
+                        sniping: 78,
+                        utility: 85,
+                        teamwork: 95
+                    }
+                },
+                {
+                    id: 5,
+                    gameId: "Falcon",
+                    realname: "陈晨",
+                    teamId: 1,
+                    age: 20,
+                    gender: "男",
+                    position: "自由人",
+                    rating: 1.20,
+                    avatar: null,
+                    stats: {
+                        firepower: 85,
+                        entrying: 80,
+                        trading: 82,
+                        opening: 85,
+                        clutching: 78,
+                        sniping: 82,
+                        utility: 80,
+                        teamwork: 85
+                    }
+                },
+                {
+                    id: 6,
+                    gameId: "Coach_Zhao",
+                    realname: "赵教练",
+                    teamId: 1,
+                    age: 32,
+                    gender: "男",
+                    position: "教练",
+                    rating: 0.00,
+                    avatar: null,
+                    stats: {
+                        firepower: 60,
+                        entrying: 65,
+                        trading: 70,
+                        opening: 68,
+                        clutching: 62,
+                        sniping: 58,
+                        utility: 85,
+                        teamwork: 95
+                    }
+                },
+                // 凤凰涅槃选手
+                {
+                    id: 7,
+                    gameId: "PhoenixRise",
+                    realname: "周涛",
+                    teamId: 2,
+                    age: 21,
+                    gender: "男",
+                    position: "狙击手",
+                    rating: 1.28,
+                    avatar: null,
+                    stats: {
+                        firepower: 90,
+                        entrying: 75,
+                        trading: 82,
+                        opening: 80,
+                        clutching: 85,
+                        sniping: 92,
+                        utility: 78,
+                        teamwork: 82
+                    }
+                },
+                {
+                    id: 8,
+                    gameId: "Flame",
+                    realname: "吴刚",
+                    teamId: 2,
+                    age: 22,
+                    gender: "男",
+                    position: "突破手",
+                    rating: 1.22,
+                    avatar: null,
+                    stats: {
+                        firepower: 86,
+                        entrying: 90,
+                        trading: 78,
+                        opening: 82,
+                        clutching: 80,
+                        sniping: 74,
+                        utility: 76,
+                        teamwork: 84
+                    }
+                },
+                {
+                    id: 12,
+                    gameId: "Coach_Qian",
+                    realname: "钱教练",
+                    teamId: 2,
+                    age: 35,
+                    gender: "男",
+                    position: "教练",
+                    rating: 0.00,
+                    avatar: null,
+                    stats: {
+                        firepower: 55,
+                        entrying: 60,
+                        trading: 65,
+                        opening: 62,
+                        clutching: 58,
+                        sniping: 52,
+                        utility: 88,
+                        teamwork: 92
+                    }
+                }
+            ];
+            
+            // 默认赛事数据
+            appData.matches = {
+                today: [
+                    {
+                        id: 1,
+                        teamAId: 1,
+                        teamBId: 2,
+                        teamAScore: null,
+                        teamBScore: null,
+                        time: getTomorrowDate(19, 0),
+                        event: "2023秋季季后赛"
+                    }
+                ],
+                past: [
+                    {
+                        id: 2,
+                        teamAId: 1,
+                        teamBId: 3,
+                        teamAScore: 2,
+                        teamBScore: 1,
+                        time: getPastDate(5, 19, 0),
+                        event: "2023秋季赛"
+                    },
+                    {
+                        id: 3,
+                        teamAId: 2,
+                        teamBId: 3,
+                        teamAScore: 2,
+                        teamBScore: 0,
+                        time: getPastDate(7, 20, 0),
+                        event: "2023秋季赛"
+                    }
+                ],
+                upcoming: [
+                    {
+                        id: 4,
+                        teamAId: 1,
+                        teamBId: 2,
+                        teamAScore: null,
+                        teamBScore: null,
+                        time: getFutureDate(7, 19, 0),
+                        event: "2023秋季季后赛半决赛"
+                    }
+                ]
+            };
+        }
+        
+        // 获取明天日期
+        function getTomorrowDate(hour = 19, minute = 0) {
+            const date = new Date();
+            date.setDate(date.getDate() + 1);
+            date.setHours(hour, minute, 0, 0);
+            return date.toISOString();
+        }
+        
+        // 获取过去日期
+        function getPastDate(daysAgo = 5, hour = 19, minute = 0) {
+            const date = new Date();
+            date.setDate(date.getDate() - daysAgo);
+            date.setHours(hour, minute, 0, 0);
+            return date.toISOString();
+        }
+        
+        // 获取未来日期
+        function getFutureDate(daysLater = 7, hour = 19, minute = 0) {
+            const date = new Date();
+            date.setDate(date.getDate() + daysLater);
+            date.setHours(hour, minute, 0, 0);
+            return date.toISOString();
+        }
+        
+        // ========== 数据管理功能 ==========
+        
+        // 导出数据到文件
+        function exportDataToFile() {
+            try {
+                const dataToExport = {
+                    teams: appData.teams,
+                    players: appData.players,
+                    matches: appData.matches,
+                    exportDate: new Date().toISOString(),
+                    version: DATA_VERSION
+                };
+                
+                const dataStr = JSON.stringify(dataToExport, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `esports_backup_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                alert('数据导出成功！文件已下载。');
+                return true;
+            } catch (error) {
+                console.error('导出数据失败:', error);
+                alert('导出数据失败，请检查控制台信息。');
+                return false;
+            }
+        }
+        
+        // 从文件导入数据
+        function importDataFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        // 验证数据格式
+                        if (!importedData.teams || !importedData.players || !importedData.matches) {
+                            throw new Error('数据格式不正确');
+                        }
+                        
+                        if (confirm('导入数据将覆盖当前所有数据，确定要继续吗？')) {
+                            // 更新数据
+                            appData.teams = importedData.teams;
+                            appData.players = importedData.players;
+                            appData.matches = importedData.matches;
+                            
+                            // 重新排序
+                            appData.teams.sort((a, b) => b.points - a.points);
+                            appData.players.sort((a, b) => b.rating - a.rating);
+                            
+                            // 保存到localStorage
+                            saveDataToStorage();
+                            
+                            // 重新渲染所有页面
+                            renderAllPages();
+                            
+                            alert('数据导入成功！');
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    } catch (error) {
+                        console.error('导入数据失败:', error);
+                        alert('导入数据失败：数据格式不正确或已损坏。');
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error('读取文件失败'));
+                };
+                
+                reader.readAsText(file);
+            });
+        }
+        
+        // 清空所有数据
+        function clearAllData() {
+            if (confirm('警告：这将清除所有数据（包括战队、选手、赛事和图片），操作不可恢复！确定要清空吗？')) {
+                // 重置数据
+                appData.teams = [];
+                appData.players = [];
+                appData.matches = { today: [], past: [], upcoming: [] };
+                appData.images = {};
+                
+                // 清除localStorage
+                localStorage.removeItem(STORAGE_KEY);
+                
+                // 创建默认数据
+                createDefaultData();
+                saveDataToStorage();
+                
+                // 重新渲染
+                renderAllPages();
+                
+                alert('数据已清空，已恢复默认数据。');
+            }
+        }
+        
+        // 更新数据统计显示
+        function updateDataStats() {
+            // 计算数据统计
+            const teamCount = appData.teams.length;
+            const playerCount = appData.players.length;
+            const matchCount = Object.values(appData.matches).flat().length;
+            
+            // 计算存储大小
+            const dataString = JSON.stringify(appData);
+            const dataSize = new Blob([dataString]).size;
+            const sizeInKB = (dataSize / 1024).toFixed(2);
+            
+            // 更新显示
+            document.getElementById('data-teams-count').textContent = teamCount;
+            document.getElementById('data-players-count').textContent = playerCount;
+            document.getElementById('data-matches-count').textContent = matchCount;
+            document.getElementById('data-storage-size').textContent = `${sizeInKB} KB`;
+            
+            // 检查存储空间使用情况
+            if (dataSize > 4 * 1024 * 1024) { // 超过4MB
+                document.getElementById('data-storage-size').style.color = 'var(--warning)';
+            } else {
+                document.getElementById('data-storage-size').style.color = 'var(--accent-purple)';
+            }
+        }
+        
+        // ========== 页面渲染函数 ==========
+        
+        // 渲染所有页面
+        function renderAllPages() {
+            renderHomePage();
+            renderTeamsPage();
+            renderPlayersPage();
+            renderAdminPage();
+            updateDataStats();
+        }
+        
+        // 渲染首页
+        function renderHomePage() {
+            renderMatches('today', 'today-matches');
+            renderMatches('past', 'past-matches');
+            renderMatches('upcoming', 'upcoming-matches');
+        }
+        
+        // 渲染比赛
+        function renderMatches(matchType, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const matches = appData.matches[matchType];
+            container.innerHTML = '';
+            
+            if (matches.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted" style="padding: 40px;">暂无赛事数据</div>';
+                return;
+            }
+            
+            matches.forEach(match => {
+                const teamA = appData.teams.find(t => t.id === match.teamAId);
+                const teamB = appData.teams.find(t => t.id === match.teamBId);
+                
+                if (!teamA || !teamB) return;
+                
+                const matchElement = document.createElement('div');
+                matchElement.className = `match-item ${matchType}`;
+                
+                const isPast = matchType === 'past';
+                const scoreHtml = isPast ? 
+                    `<div class="match-score">${match.teamAScore} : ${match.teamBScore}</div>` :
+                    '<div class="match-score">VS</div>';
+                
+                const matchTime = new Date(match.time);
+                const timeString = isPast ? 
+                    `${matchTime.toLocaleDateString()} ${matchTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` :
+                    `${matchTime.toLocaleDateString()} ${matchTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                
+                matchElement.innerHTML = `
+                    <div class="match-teams">
+                        <div class="team">
+                            <div class="team-logo">${teamA.shortName.charAt(0)}</div>
+                            <span>${teamA.name}</span>
+                        </div>
+                        ${scoreHtml}
+                        <div class="team">
+                            <div class="team-logo">${teamB.shortName.charAt(0)}</div>
+                            <span>${teamB.name}</span>
+                        </div>
+                    </div>
+                    <div class="match-info">
+                        <div class="match-event">${match.event}</div>
+                        <div class="match-time">${timeString}</div>
+                    </div>
+                `;
+                
+                container.appendChild(matchElement);
+            });
+        }
+        
+        // 渲染战队页面
+        function renderTeamsPage() {
+            const container = document.getElementById('team-rankings');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            appData.teams.forEach((team, index) => {
+                const teamElement = document.createElement('div');
+                teamElement.className = 'card team-card';
+                teamElement.dataset.teamId = team.id;
+                
+                teamElement.innerHTML = `
+                    <div class="team-rank">${index + 1}</div>
+                    <div class="team-card-content">
+                        <div class="team-logo-large">${team.shortName.charAt(0)}</div>
+                        <div class="team-info">
+                            <h3>${team.name}</h3>
+                            <div class="text-muted">${team.shortName}</div>
+                            <div class="team-stats">
+                                <div class="stat">
+                                    <div class="stat-value">${team.points}</div>
+                                    <div class="stat-label">积分</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${team.wins}</div>
+                                    <div class="stat-label">胜场</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                teamElement.addEventListener('click', () => showTeamDetail(team.id));
+                container.appendChild(teamElement);
+            });
+        }
+        
+        // 显示战队详情
+        function showTeamDetail(teamId) {
+            currentTeamId = teamId;
+            const team = appData.teams.find(t => t.id === teamId);
+            if (!team) return;
+            
+            // 更新页面显示
+            document.getElementById('team-detail-name').textContent = team.name;
+            document.getElementById('team-detail-logo').textContent = team.shortName.charAt(0);
+            document.getElementById('team-detail-points').textContent = team.points;
+            document.getElementById('team-detail-rank').textContent = `#${appData.teams.findIndex(t => t.id === teamId) + 1}`;
+            document.getElementById('team-detail-wins').textContent = team.wins;
+            
+            // 渲染战队成员
+            renderTeamPlayers(teamId);
+            
+            // 渲染战队成就
+            const achievementsContainer = document.getElementById('team-achievements');
+            achievementsContainer.innerHTML = '';
+            
+            if (team.achievements && team.achievements.length > 0) {
+                team.achievements.forEach(achievement => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${achievement}</span>
+                        <span class="text-muted">冠军</span>
+                    `;
+                    achievementsContainer.appendChild(li);
+                });
+            } else {
+                achievementsContainer.innerHTML = '<li class="text-muted text-center">暂无成就记录</li>';
+            }
+            
+            // 切换到战队详情页
+            switchPage('team-detail-page');
+        }
+        
+        // 渲染战队成员
+        function renderTeamPlayers(teamId) {
+            const container = document.getElementById('team-detail-players');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const team = appData.teams.find(t => t.id === teamId);
+            if (!team || !team.players) return;
+            
+            team.players.forEach(playerId => {
+                const player = appData.players.find(p => p.id === playerId);
+                if (!player) return;
+                
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player-card';
+                playerElement.dataset.playerId = player.id;
+                
+                const isCoach = player.position === '教练';
+                const ratingDisplay = isCoach ? '教练' : player.rating.toFixed(2);
+                
+                playerElement.innerHTML = `
+                    <div class="player-avatar">
+                        ${player.avatar ? `<img src="${player.avatar}" alt="${player.gameId}">` : player.gameId.charAt(0)}
+                    </div>
+                    <div class="player-name">${player.gameId}</div>
+                    <div class="player-realname">${player.realname}</div>
+                    <div class="player-role">${player.position}</div>
+                    <div class="player-rating">${ratingDisplay}</div>
+                `;
+                
+                playerElement.addEventListener('click', () => showPlayerDetail(player.id));
+                container.appendChild(playerElement);
+            });
+        }
+        
+        // 渲染选手页面
+        function renderPlayersPage() {
+            const container = document.getElementById('players-table-body');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // 过滤掉教练，只显示选手
+            const playersToShow = appData.players.filter(p => p.position !== '教练');
+            
+            playersToShow.forEach((player, index) => {
+                const team = appData.teams.find(t => t.id === player.teamId);
+                
+                const row = document.createElement('tr');
+                row.className = 'player-row';
+                row.dataset.playerId = player.id;
+                
+                row.innerHTML = `
+                    <td class="player-rank">${index + 1}</td>
+                    <td>
+                        <div class="player-info-cell">
+                            <div class="player-table-avatar">
+                                ${player.avatar ? `<img src="${player.avatar}" alt="${player.gameId}">` : player.gameId.charAt(0)}
+                            </div>
+                            <div>
+                                <div><strong>${player.gameId}</strong></div>
+                                <div class="text-muted">${player.realname}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${team ? team.shortName : '自由选手'}</td>
+                    <td><strong>${player.rating.toFixed(2)}</strong></td>
+                    <td>${player.age}</td>
+                `;
+                
+                row.addEventListener('click', () => showPlayerDetail(player.id));
+                container.appendChild(row);
+            });
+        }
+        
+        // 显示选手详情
+        function showPlayerDetail(playerId) {
+            currentPlayerId = playerId;
+            const player = appData.players.find(p => p.id === playerId);
+            if (!player) return;
+            
+            const team = appData.teams.find(t => t.id === player.teamId);
+            
+            // 更新基本信息
+            document.getElementById('player-detail-game-id').textContent = player.gameId;
+            document.getElementById('player-detail-realname').textContent = player.realname;
+            document.getElementById('player-detail-team').textContent = team ? team.name : '自由选手';
+            document.getElementById('player-detail-age').textContent = player.age;
+            document.getElementById('player-detail-rating').textContent = player.rating.toFixed(2);
+            document.getElementById('player-detail-gender').textContent = player.gender;
+            document.getElementById('player-detail-position').textContent = player.position;
+            
+            // 更新头像
+            const avatarContainer = document.getElementById('player-detail-avatar');
+            if (player.avatar) {
+                avatarContainer.innerHTML = `<img src="${player.avatar}" alt="${player.gameId}">`;
+            } else {
+                avatarContainer.textContent = player.gameId.charAt(0);
+            }
+            
+            // 渲染雷达图
+            renderPlayerRadarChart(player);
+            
+            // 渲染详细数据
+            renderPlayerStats(player);
+            
+            // 更新对比选手下拉框
+            updateComparePlayerSelect(playerId);
+            
+            // 切换到选手详情页
+            switchPage('player-detail-page');
+        }
+        
+        // 渲染选手雷达图
+        function renderPlayerRadarChart(player, comparePlayer = null) {
+            const ctx = document.getElementById('player-radar-chart');
+            if (!ctx) return;
+            
+            // 如果已有图表实例，销毁它
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            
+            const isComparison = comparePlayer !== null;
+            const datasets = [];
+            
+            // 当前选手数据
+            datasets.push({
+                label: player.gameId,
+                data: [
+                    player.stats.firepower,
+                    player.stats.entrying,
+                    player.stats.trading,
+                    player.stats.opening,
+                    player.stats.clutching,
+                    player.stats.sniping,
+                    player.stats.utility,
+                    player.stats.teamwork
+                ],
+                backgroundColor: 'rgba(138, 43, 226, 0.2)',
+                borderColor: 'rgba(138, 43, 226, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(138, 43, 226, 1)'
+            });
+            
+            // 对比选手数据（如果有）
+            if (isComparison) {
+                datasets.push({
+                    label: comparePlayer.gameId,
+                    data: [
+                        comparePlayer.stats.firepower,
+                        comparePlayer.stats.entrying,
+                        comparePlayer.stats.trading,
+                        comparePlayer.stats.opening,
+                        comparePlayer.stats.clutching,
+                        comparePlayer.stats.sniping,
+                        comparePlayer.stats.utility,
+                        comparePlayer.stats.teamwork
+                    ],
+                    backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                    borderColor: 'rgba(0, 212, 255, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(0, 212, 255, 1)'
+                });
+            }
+            
+            // 创建雷达图
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Firepower', 'Entrying', 'Trading', 'Opening', 'Clutching', 'Sniping', 'Utility', 'Teamwork'],
+                    datasets: datasets
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            },
+                            pointLabels: {
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            angleLines: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染选手详细数据
+        function renderPlayerStats(player) {
+            const statsGrid = document.getElementById('player-detailed-stats');
+            if (!statsGrid) return;
+            
+            const stats = player.stats;
+            statsGrid.innerHTML = '';
+            
+            // 创建8个数据项
+            const statItems = [
+                { label: 'Firepower', value: stats.firepower },
+                { label: 'Entrying', value: stats.entrying },
+                { label: 'Trading', value: stats.trading },
+                { label: 'Opening', value: stats.opening },
+                { label: 'Clutching', value: stats.clutching },
+                { label: 'Sniping', value: stats.sniping },
+                { label: 'Utility', value: stats.utility },
+                { label: 'Teamwork', value: stats.teamwork }
+            ];
+            
+            statItems.forEach(stat => {
+                const statElement = document.createElement('div');
+                statElement.className = 'player-stat-item';
+                statElement.innerHTML = `
+                    <div class="player-stat-value">${stat.value}</div>
+                    <div class="player-stat-label">${stat.label}</div>
+                `;
+                statsGrid.appendChild(statElement);
+            });
+        }
+        
+        // 更新对比选手下拉框
+        function updateComparePlayerSelect(currentPlayerId) {
+            const select = document.getElementById('compare-player-select');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">选择对比选手</option>';
+            
+            // 添加所有非教练选手，排除当前选手
+            appData.players
+                .filter(p => p.position !== '教练' && p.id !== currentPlayerId)
+                .forEach(player => {
+                    const team = appData.teams.find(t => t.id === player.teamId);
+                    const option = document.createElement('option');
+                    option.value = player.id;
+                    option.textContent = `${player.gameId} · ${player.realname} (${team ? team.shortName : '自由选手'})`;
+                    select.appendChild(option);
+                });
+        }
+        
+        // 渲染管理员页面
+        function renderAdminPage() {
+            renderMatchesAdmin();
+            renderTeamsAdmin();
+            renderPlayersAdmin();
+            updateTeamSelects();
+            updateDataStats();
+        }
+        
+        // 渲染赛事管理
+        function renderMatchesAdmin() {
+            const container = document.getElementById('matches-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // 渲染今日赛程
+            container.innerHTML += '<h4 style="margin-top: 20px; color: var(--accent-cyan);">今日赛程</h4>';
+            renderMatchList('today', container);
+            
+            // 渲染往日赛果
+            container.innerHTML += '<h4 style="margin-top: 20px; color: var(--accent-cyan);">往日赛果</h4>';
+            renderMatchList('past', container);
+            
+            // 渲染未来赛事
+            container.innerHTML += '<h4 style="margin-top: 20px; color: var(--accent-cyan);">未来赛事</h4>';
+            renderMatchList('upcoming', container);
+        }
+        
+        // 渲染比赛列表
+        function renderMatchList(matchType, container) {
+            const matches = appData.matches[matchType];
+            
+            if (matches.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-muted';
+                emptyMsg.textContent = '暂无赛事';
+                container.appendChild(emptyMsg);
+                return;
+            }
+            
+            matches.forEach(match => {
+                const teamA = appData.teams.find(t => t.id === match.teamAId);
+                const teamB = appData.teams.find(t => t.id === match.teamBId);
+                
+                if (!teamA || !teamB) return;
+                
+                const matchTime = new Date(match.time);
+                const timeString = matchTime.toLocaleDateString() + ' ' + 
+                                  matchTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                const matchElement = document.createElement('div');
+                matchElement.className = 'data-item';
+                matchElement.dataset.matchId = match.id;
+                matchElement.dataset.matchType = matchType;
+                
+                const isPast = matchType === 'past';
+                const scoreText = isPast ? 
+                    `${match.teamAScore} : ${match.teamBScore}` : 
+                    '待定';
+                
+                matchElement.innerHTML = `
+                    <div>
+                        <div><strong>${teamA.name} vs ${teamB.name}</strong></div>
+                        <div class="text-muted">${match.event} · ${timeString}</div>
+                        <div>比分: ${scoreText}</div>
+                    </div>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary btn-small edit-match-btn">
+                            <i class="fas fa-edit"></i>
+                            编辑
+                        </button>
+                        <button class="btn btn-danger btn-small delete-match-btn">
+                            <i class="fas fa-trash"></i>
+                            删除
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(matchElement);
+            });
+        }
+        
+        // 渲染战队管理
+        function renderTeamsAdmin() {
+            const container = document.getElementById('teams-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            appData.teams.forEach(team => {
+                const teamElement = document.createElement('div');
+                teamElement.className = 'data-item';
+                teamElement.dataset.teamId = team.id;
+                
+                teamElement.innerHTML = `
+                    <div>
+                        <div><strong>${team.name} (${team.shortName})</strong></div>
+                        <div class="text-muted">积分: ${team.points} · 胜场: ${team.wins}</div>
+                        <div>成员: ${team.players ? team.players.length : 0}人</div>
+                    </div>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary btn-small edit-team-btn">
+                            <i class="fas fa-edit"></i>
+                            编辑
+                        </button>
+                        <button class="btn btn-danger btn-small delete-team-btn">
+                            <i class="fas fa-trash"></i>
+                            删除
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(teamElement);
+            });
+        }
+        
+        // 渲染选手管理
+        function renderPlayersAdmin() {
+            const container = document.getElementById('players-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            appData.players.forEach(player => {
+                const team = appData.teams.find(t => t.id === player.teamId);
+                
+                const playerElement = document.createElement('div');
+                playerElement.className = 'data-item';
+                playerElement.dataset.playerId = player.id;
+                
+                playerElement.innerHTML = `
+                    <div>
+                        <div><strong>${player.gameId} · ${player.realname}</strong></div>
+                        <div class="text-muted">${team ? team.name : '自由选手'} · ${player.position}</div>
+                        <div>Rating: ${player.rating.toFixed(2)} · 年龄: ${player.age}</div>
+                    </div>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary btn-small edit-player-btn">
+                            <i class="fas fa-edit"></i>
+                            编辑
+                        </button>
+                        <button class="btn btn-danger btn-small delete-player-btn">
+                            <i class="fas fa-trash"></i>
+                            删除
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(playerElement);
+            });
+        }
+        
+        // 更新所有战队选择框
+        function updateTeamSelects() {
+            // 更新赛事管理中的战队选择框
+            const teamASelect = document.getElementById('team-a-select');
+            const teamBSelect = document.getElementById('team-b-select');
+            const playerTeamSelect = document.getElementById('player-team-select');
+            
+            if (teamASelect) {
+                teamASelect.innerHTML = '<option value="">选择战队</option>';
+                appData.teams.forEach(team => {
+                    teamASelect.innerHTML += `<option value="${team.id}">${team.name} (${team.shortName})</option>`;
+                });
+            }
+            
+            if (teamBSelect) {
+                teamBSelect.innerHTML = '<option value="">选择战队</option>';
+                appData.teams.forEach(team => {
+                    teamBSelect.innerHTML += `<option value="${team.id}">${team.name} (${team.shortName})</option>`;
+                });
+            }
+            
+            if (playerTeamSelect) {
+                playerTeamSelect.innerHTML = '<option value="">选择战队</option>';
+                appData.teams.forEach(team => {
+                    playerTeamSelect.innerHTML += `<option value="${team.id}">${team.name} (${team.shortName})</option>`;
+                });
+            }
+        }
+        
+        // ========== 页面切换函数 ==========
+        
+        // 切换页面
+        function switchPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // 显示目标页面
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+            
+            // 更新导航栏活动状态
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // 如果是子页面（战队详情或选手详情），保持父页面的导航状态
+            if (pageId === 'team-detail-page') {
+                document.querySelector('[data-page="teams"]').classList.add('active');
+            } else if (pageId === 'player-detail-page') {
+                document.querySelector('[data-page="players"]').classList.add('active');
+            } else {
+                // 主页面
+                const navLink = document.querySelector(`[data-page="${pageId.replace('-page', '')}"]`);
+                if (navLink) {
+                    navLink.classList.add('active');
+                }
+            }
+        }
+        
+        // ========== 事件监听器设置 ==========
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 导航栏点击事件
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function() {
+                    const pageId = this.dataset.page + '-page';
+                    switchPage(pageId);
+                });
+            });
+            
+            // 首页标签页切换
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    
+                    // 更新活动标签
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 显示对应内容
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId + '-matches').classList.add('active');
+                });
+            });
+            
+            // 管理员标签页切换
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.adminTab;
+                    
+                    // 更新活动标签
+                    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 显示对应内容
+                    document.querySelectorAll('.admin-section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.getElementById(tabId + '-admin').classList.add('active');
+                });
+            });
+            
+            // 返回按钮
+            document.getElementById('back-to-teams')?.addEventListener('click', () => {
+                switchPage('teams-page');
+            });
+            
+            document.getElementById('back-to-players')?.addEventListener('click', () => {
+                switchPage('players-page');
+            });
+            
+            // 选手对比功能
+            document.getElementById('compare-btn')?.addEventListener('click', function() {
+                const select = document.getElementById('compare-player-select');
+                const comparePlayerId = parseInt(select.value);
+                
+                if (!comparePlayerId) {
+                    alert('请选择要对比的选手');
+                    return;
+                }
+                
+                const currentPlayer = appData.players.find(p => p.id === currentPlayerId);
+                const comparePlayer = appData.players.find(p => p.id === comparePlayerId);
+                
+                if (currentPlayer && comparePlayer) {
+                    renderPlayerRadarChart(currentPlayer, comparePlayer);
+                }
+            });
+            
+            document.getElementById('clear-comparison')?.addEventListener('click', function() {
+                const currentPlayer = appData.players.find(p => p.id === currentPlayerId);
+                if (currentPlayer) {
+                    renderPlayerRadarChart(currentPlayer);
+                }
+                document.getElementById('compare-player-select').value = '';
+            });
+            
+            // 图片上传
+            setupImageUpload('team-logo-upload', 'team-logo-input', 'team-logo-preview');
+            setupImageUpload('player-avatar-upload', 'player-avatar-input', 'player-avatar-preview');
+            
+            // 能力值滑块
+            setupStatSliders();
+            
+            // 赛事管理
+            setupMatchesAdmin();
+            
+            // 战队管理
+            setupTeamsAdmin();
+            
+            // 选手管理
+            setupPlayersAdmin();
+            
+            // 数据管理
+            setupDataManagement();
+            
+            // 表单默认值
+            initFormDefaults();
+        }
+        
+        // 设置图片上传
+        function setupImageUpload(uploadAreaId, fileInputId, previewId) {
+            const uploadArea = document.getElementById(uploadAreaId);
+            const fileInput = document.getElementById(fileInputId);
+            const preview = document.getElementById(previewId);
+            
+            if (!uploadArea || !fileInput || !preview) return;
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) return;
+                
+                if (!file.type.match('image.*')) {
+                    alert('请选择图片文件');
+                    return;
+                }
+                
+                // 检查文件大小（限制为2MB）
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('图片大小不能超过2MB');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="预览">`;
+                    
+                    // 保存图片数据
+                    if (uploadAreaId === 'team-logo-upload') {
+                        if (editingTeamId) {
+                            const team = appData.teams.find(t => t.id === editingTeamId);
+                            if (team) {
+                                team.logo = e.target.result;
+                                saveDataToStorage();
+                            }
+                        }
+                    } else if (uploadAreaId === 'player-avatar-upload') {
+                        if (editingPlayerId) {
+                            const player = appData.players.find(p => p.id === editingPlayerId);
+                            if (player) {
+                                player.avatar = e.target.result;
+                                saveDataToStorage();
+                            }
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // 设置能力值滑块
+        function setupStatSliders() {
+            const sliders = [
+                'firepower', 'entrying', 'trading', 'opening', 
+                'clutching', 'sniping', 'utility', 'teamwork'
+            ];
+            
+            sliders.forEach(stat => {
+                const slider = document.getElementById(`${stat}-slider`);
+                const valueDisplay = document.getElementById(`${stat}-value`);
+                
+                if (slider && valueDisplay) {
+                    // 初始化显示
+                    valueDisplay.textContent = slider.value;
+                    
+                    // 滑块变化时更新显示
+                    slider.addEventListener('input', function() {
+                        valueDisplay.textContent = this.value;
+                    });
+                }
+            });
+        }
+        
+        // 设置赛事管理
+        function setupMatchesAdmin() {
+            // 添加赛事按钮
+            document.getElementById('add-match-btn')?.addEventListener('click', function() {
+                addOrUpdateMatch();
+            });
+            
+            // 更新赛事按钮
+            document.getElementById('update-match-btn')?.addEventListener('click', function() {
+                addOrUpdateMatch();
+            });
+            
+            // 取消编辑按钮
+            document.getElementById('cancel-edit-match')?.addEventListener('click', function() {
+                resetMatchForm();
+            });
+            
+            // 赛事列表的编辑和删除按钮（事件委托）
+            document.getElementById('matches-list')?.addEventListener('click', function(e) {
+                const editBtn = e.target.closest('.edit-match-btn');
+                const deleteBtn = e.target.closest('.delete-match-btn');
+                
+                if (editBtn) {
+                    const matchItem = editBtn.closest('.data-item');
+                    const matchId = parseInt(matchItem.dataset.matchId);
+                    const matchType = matchItem.dataset.matchType;
+                    
+                    editMatch(matchId, matchType);
+                } else if (deleteBtn) {
+                    const matchItem = deleteBtn.closest('.data-item');
+                    const matchId = parseInt(matchItem.dataset.matchId);
+                    const matchType = matchItem.dataset.matchType;
+                    
+                    if (confirm('确定要删除这个赛事吗？')) {
+                        deleteMatch(matchId, matchType);
+                    }
+                }
+            });
+        }
+        
+        // 添加或更新赛事
+        function addOrUpdateMatch() {
+            const matchType = document.getElementById('match-type').value;
+            const event = document.getElementById('match-event').value.trim();
+            const teamAId = parseInt(document.getElementById('team-a-select').value);
+            const teamBId = parseInt(document.getElementById('team-b-select').value);
+            const teamAScore = document.getElementById('team-a-score').value;
+            const teamBScore = document.getElementById('team-b-score').value;
+            const time = document.getElementById('match-time').value;
+            
+            // 验证输入
+            if (!event) {
+                alert('请输入赛事名称');
+                return;
+            }
+            
+            if (!teamAId || !teamBId) {
+                alert('请选择两个战队');
+                return;
+            }
+            
+            if (teamAId === teamBId) {
+                alert('两个战队不能相同');
+                return;
+            }
+            
+            if (!time) {
+                alert('请选择比赛时间');
+                return;
+            }
+            
+            if (matchType === 'past' && (!teamAScore || !teamBScore)) {
+                alert('往日赛果必须填写比分');
+                return;
+            }
+            
+            if (editingMatchId) {
+                // 更新现有赛事
+                const matchType = document.getElementById('match-type').value;
+                const matches = appData.matches[matchType];
+                const matchIndex = matches.findIndex(m => m.id === editingMatchId);
+                
+                if (matchIndex !== -1) {
+                    matches[matchIndex] = {
+                        id: editingMatchId,
+                        teamAId,
+                        teamBId,
+                        teamAScore: matchType === 'past' ? parseInt(teamAScore) : null,
+                        teamBScore: matchType === 'past' ? parseInt(teamBScore) : null,
+                        time,
+                        event
+                    };
+                }
+                
+                // 重置编辑状态
+                editingMatchId = null;
+                document.getElementById('add-match-btn').style.display = 'inline-block';
+                document.getElementById('update-match-btn').style.display = 'none';
+            } else {
+                // 添加新赛事
+                const matches = appData.matches[matchType];
+                const newId = matches.length > 0 ? Math.max(...matches.map(m => m.id)) + 1 : 1;
+                
+                matches.push({
+                    id: newId,
+                    teamAId,
+                    teamBId,
+                    teamAScore: matchType === 'past' ? parseInt(teamAScore) : null,
+                    teamBScore: matchType === 'past' ? parseInt(teamBScore) : null,
+                    time,
+                    event
+                });
+            }
+            
+            // 重置表单
+            resetMatchForm();
+            
+            // 保存数据
+            saveDataToStorage();
+            
+            // 重新渲染
+            renderMatchesAdmin();
+            renderHomePage();
+            
+            alert(editingMatchId ? '赛事更新成功' : '赛事添加成功');
+        }
+        
+        // 编辑赛事
+        function editMatch(matchId, matchType) {
+            const matches = appData.matches[matchType];
+            const match = matches.find(m => m.id === matchId);
+            
+            if (!match) return;
+            
+            // 填充表单
+            document.getElementById('match-type').value = matchType;
+            document.getElementById('match-event').value = match.event;
+            document.getElementById('team-a-select').value = match.teamAId;
+            document.getElementById('team-b-select').value = match.teamBId;
+            
+            if (matchType === 'past') {
+                document.getElementById('team-a-score').value = match.teamAScore || '';
+                document.getElementById('team-b-score').value = match.teamBScore || '';
+            } else {
+                document.getElementById('team-a-score').value = '';
+                document.getElementById('team-b-score').value = '';
+            }
+            
+            // 设置时间格式
+            const timeInput = document.getElementById('match-time');
+            const matchTime = new Date(match.time);
+            const formattedTime = matchTime.toISOString().slice(0, 16);
+            timeInput.value = formattedTime;
+            
+            // 切换到编辑模式
+            editingMatchId = matchId;
+            document.getElementById('add-match-btn').style.display = 'none';
+            document.getElementById('update-match-btn').style.display = 'inline-block';
+        }
+        
+        // 删除赛事
+        function deleteMatch(matchId, matchType) {
+            const matches = appData.matches[matchType];
+            const matchIndex = matches.findIndex(m => m.id === matchId);
+            
+            if (matchIndex !== -1) {
+                matches.splice(matchIndex, 1);
+                
+                // 保存数据
+                saveDataToStorage();
+                
+                // 重新渲染
+                renderMatchesAdmin();
+                renderHomePage();
+                
+                alert('赛事删除成功');
+            }
+        }
+        
+        // 重置赛事表单
+        function resetMatchForm() {
+            document.getElementById('match-event').value = '';
+            document.getElementById('team-a-select').value = '';
+            document.getElementById('team-b-select').value = '';
+            document.getElementById('team-a-score').value = '';
+            document.getElementById('team-b-score').value = '';
+            
+            // 设置默认时间为明天
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const formattedTime = tomorrow.toISOString().slice(0, 16);
+            document.getElementById('match-time').value = formattedTime;
+            
+            // 重置编辑状态
+            editingMatchId = null;
+            document.getElementById('add-match-btn').style.display = 'inline-block';
+            document.getElementById('update-match-btn').style.display = 'none';
+        }
+        
+        // 设置战队管理
+        function setupTeamsAdmin() {
+            // 添加战队按钮
+            document.getElementById('add-team-btn')?.addEventListener('click', function() {
+                addOrUpdateTeam();
+            });
+            
+            // 更新战队按钮
+            document.getElementById('update-team-btn')?.addEventListener('click', function() {
+                addOrUpdateTeam();
+            });
+            
+            // 取消编辑按钮
+            document.getElementById('cancel-edit-team')?.addEventListener('click', function() {
+                resetTeamForm();
+            });
+            
+            // 战队列表的编辑和删除按钮（事件委托）
+            document.getElementById('teams-list')?.addEventListener('click', function(e) {
+                const editBtn = e.target.closest('.edit-team-btn');
+                const deleteBtn = e.target.closest('.delete-team-btn');
+                
+                if (editBtn) {
+                    const teamItem = editBtn.closest('.data-item');
+                    const teamId = parseInt(teamItem.dataset.teamId);
+                    
+                    editTeam(teamId);
+                } else if (deleteBtn) {
+                    const teamItem = deleteBtn.closest('.data-item');
+                    const teamId = parseInt(teamItem.dataset.teamId);
+                    
+                    if (confirm('确定要删除这个战队吗？\n注意：战队删除后，选手数据会保留，但会变成自由选手状态。')) {
+                        deleteTeam(teamId);
+                    }
+                }
+            });
+        }
+        
+        // 添加或更新战队
+        function addOrUpdateTeam() {
+            const name = document.getElementById('team-name').value.trim();
+            const shortName = document.getElementById('team-short-name').value.trim();
+            const points = parseInt(document.getElementById('team-points').value) || 0;
+            const wins = parseInt(document.getElementById('team-wins').value) || 0;
+            const achievementsText = document.getElementById('team-achievements-input').value;
+            
+            // 验证输入
+            if (!name) {
+                alert('请输入战队名称');
+                return;
+            }
+            
+            if (!shortName) {
+                alert('请输入战队简称');
+                return;
+            }
+            
+            // 处理成就（按行分割）
+            const achievements = achievementsText.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+            
+            if (editingTeamId) {
+                // 更新现有战队
+                const teamIndex = appData.teams.findIndex(t => t.id === editingTeamId);
+                
+                if (teamIndex !== -1) {
+                    appData.teams[teamIndex] = {
+                        ...appData.teams[teamIndex],
+                        name,
+                        shortName,
+                        points,
+                        wins,
+                        achievements
+                    };
+                }
+                
+                // 重置编辑状态
+                editingTeamId = null;
+                document.getElementById('add-team-btn').style.display = 'inline-block';
+                document.getElementById('update-team-btn').style.display = 'none';
+            } else {
+                // 添加新战队
+                const newId = appData.teams.length > 0 ? Math.max(...appData.teams.map(t => t.id)) + 1 : 1;
+                
+                appData.teams.push({
+                    id: newId,
+                    name,
+                    shortName,
+                    points,
+                    wins,
+                    logo: null,
+                    achievements,
+                    players: [] // 新战队开始时没有选手
+                });
+            }
+            
+            // 按积分重新排序战队
+            appData.teams.sort((a, b) => b.points - a.points);
+            
+            // 重置表单
+            resetTeamForm();
+            
+            // 保存数据
+            saveDataToStorage();
+            
+            // 重新渲染
+            renderTeamsAdmin();
+            renderTeamsPage();
+            updateTeamSelects();
+            
+            alert(editingTeamId ? '战队更新成功' : '战队添加成功');
+        }
+        
+        // 编辑战队
+        function editTeam(teamId) {
+            const team = appData.teams.find(t => t.id === teamId);
+            
+            if (!team) return;
+            
+            // 填充表单
+            document.getElementById('team-name').value = team.name;
+            document.getElementById('team-short-name').value = team.shortName;
+            document.getElementById('team-points').value = team.points;
+            document.getElementById('team-wins').value = team.wins;
+            document.getElementById('team-achievements-input').value = team.achievements.join('\n');
+            
+            // 显示Logo预览
+            const preview = document.getElementById('team-logo-preview');
+            if (team.logo) {
+                preview.innerHTML = `<img src="${team.logo}" alt="${team.name}">`;
+            } else {
+                preview.innerHTML = '<i class="fas fa-image" style="font-size: 40px; color: var(--text-gray);"></i>';
+            }
+            
+            // 切换到编辑模式
+            editingTeamId = teamId;
+            document.getElementById('add-team-btn').style.display = 'none';
+            document.getElementById('update-team-btn').style.display = 'inline-block';
+        }
+        
+        // 删除战队
+        function deleteTeam(teamId) {
+            const teamIndex = appData.teams.findIndex(t => t.id === teamId);
+            
+            if (teamIndex !== -1) {
+                // 重要：删除战队前，将该战队的所有选手的teamId设为null（自由选手）
+                appData.players.forEach(player => {
+                    if (player.teamId === teamId) {
+                        player.teamId = null;
+                    }
+                });
+                
+                // 删除战队
+                appData.teams.splice(teamIndex, 1);
+                
+                // 重新排序战队
+                appData.teams.sort((a, b) => b.points - a.points);
+                
+                // 保存数据
+                saveDataToStorage();
+                
+                // 重新渲染
+                renderTeamsAdmin();
+                renderTeamsPage();
+                renderPlayersPage();
+                renderPlayersAdmin();
+                updateTeamSelects();
+                
+                alert('战队删除成功。该战队的选手已转为自由选手状态。');
+            }
+        }
+        
+        // 重置战队表单
+        function resetTeamForm() {
+            document.getElementById('team-name').value = '';
+            document.getElementById('team-short-name').value = '';
+            document.getElementById('team-points').value = '1000';
+            document.getElementById('team-wins').value = '0';
+            document.getElementById('team-achievements-input').value = '';
+            
+            // 重置Logo预览
+            const preview = document.getElementById('team-logo-preview');
+            preview.innerHTML = '<i class="fas fa-image" style="font-size: 40px; color: var(--text-gray);"></i>';
+            
+            // 重置编辑状态
+            editingTeamId = null;
+            document.getElementById('add-team-btn').style.display = 'inline-block';
+            document.getElementById('update-team-btn').style.display = 'none';
+        }
+        
+        // 设置选手管理
+        function setupPlayersAdmin() {
+            // 添加选手按钮
+            document.getElementById('add-player-btn')?.addEventListener('click', function() {
+                addOrUpdatePlayer();
+            });
+            
+            // 更新选手按钮
+            document.getElementById('update-player-btn')?.addEventListener('click', function() {
+                addOrUpdatePlayer();
+            });
+            
+            // 取消编辑按钮
+            document.getElementById('cancel-edit-player')?.addEventListener('click', function() {
+                resetPlayerForm();
+            });
+            
+            // 选手列表的编辑和删除按钮（事件委托）
+            document.getElementById('players-list')?.addEventListener('click', function(e) {
+                const editBtn = e.target.closest('.edit-player-btn');
+                const deleteBtn = e.target.closest('.delete-player-btn');
+                
+                if (editBtn) {
+                    const playerItem = editBtn.closest('.data-item');
+                    const playerId = parseInt(playerItem.dataset.playerId);
+                    
+                    editPlayer(playerId);
+                } else if (deleteBtn) {
+                    const playerItem = deleteBtn.closest('.data-item');
+                    const playerId = parseInt(playerItem.dataset.playerId);
+                    
+                    if (confirm('确定要删除这个选手吗？')) {
+                        deletePlayer(playerId);
+                    }
+                }
+            });
+        }
+        
+        // 添加或更新选手
+        function addOrUpdatePlayer() {
+            const gameId = document.getElementById('player-game-id').value.trim();
+            const realname = document.getElementById('player-realname').value.trim();
+            const teamIdValue = document.getElementById('player-team-select').value;
+            const teamId = teamIdValue ? parseInt(teamIdValue) : null;
+            const position = document.getElementById('player-position').value;
+            const age = parseInt(document.getElementById('player-age').value) || 18;
+            const gender = document.getElementById('player-gender').value;
+            const rating = parseFloat(document.getElementById('player-rating').value) || 1.00;
+            
+            // 验证输入
+            if (!gameId) {
+                alert('请输入游戏ID');
+                return;
+            }
+            
+            if (!realname) {
+                alert('请输入真实姓名');
+                return;
+            }
+            
+            if (rating < 0 || rating > 3.0) {
+                alert('Rating必须在0.00到3.00之间');
+                return;
+            }
+            
+            // 获取能力值
+            const stats = {};
+            const statNames = ['firepower', 'entrying', 'trading', 'opening', 'clutching', 'sniping', 'utility', 'teamwork'];
+            
+            statNames.forEach(stat => {
+                const slider = document.getElementById(`${stat}-slider`);
+                if (slider) {
+                    stats[stat] = parseInt(slider.value);
+                }
+            });
+            
+            if (editingPlayerId) {
+                // 更新现有选手
+                const playerIndex = appData.players.findIndex(p => p.id === editingPlayerId);
+                
+                if (playerIndex !== -1) {
+                    const oldPlayer = appData.players[playerIndex];
+                    
+                    // 重要：如果选手更换了战队，需要更新原战队和新战队的成员列表
+                    if (oldPlayer.teamId !== teamId) {
+                        // 从原战队移除
+                        if (oldPlayer.teamId) {
+                            const oldTeam = appData.teams.find(t => t.id === oldPlayer.teamId);
+                            if (oldTeam && oldTeam.players) {
+                                const playerIndexInOldTeam = oldTeam.players.indexOf(editingPlayerId);
+                                if (playerIndexInOldTeam !== -1) {
+                                    oldTeam.players.splice(playerIndexInOldTeam, 1);
+                                }
+                            }
+                        }
+                        
+                        // 添加到新战队
+                        if (teamId) {
+                            const newTeam = appData.teams.find(t => t.id === teamId);
+                            if (newTeam) {
+                                if (!newTeam.players) newTeam.players = [];
+                                if (!newTeam.players.includes(editingPlayerId)) {
+                                    newTeam.players.push(editingPlayerId);
+                                }
+                            }
+                        }
+                    }
+                    
+                    appData.players[playerIndex] = {
+                        ...oldPlayer,
+                        gameId,
+                        realname,
+                        teamId,
+                        position,
+                        age,
+                        gender,
+                        rating,
+                        stats
+                    };
+                }
+                
+                // 重置编辑状态
+                editingPlayerId = null;
+                document.getElementById('add-player-btn').style.display = 'inline-block';
+                document.getElementById('update-player-btn').style.display = 'none';
+            } else {
+                // 添加新选手
+                const newId = appData.players.length > 0 ? Math.max(...appData.players.map(p => p.id)) + 1 : 1;
+                
+                const newPlayer = {
+                    id: newId,
+                    gameId,
+                    realname,
+                    teamId,
+                    position,
+                    age,
+                    gender,
+                    rating,
+                    avatar: null,
+                    stats
+                };
+                
+                appData.players.push(newPlayer);
+                
+                // 如果选择了战队，将选手添加到战队成员列表
+                if (teamId) {
+                    const team = appData.teams.find(t => t.id === teamId);
+                    if (team) {
+                        if (!team.players) team.players = [];
+                        if (!team.players.includes(newId)) {
+                            team.players.push(newId);
+                        }
+                    }
+                }
+            }
+            
+            // 按Rating重新排序选手
+            appData.players.sort((a, b) => b.rating - a.rating);
+            
+            // 重置表单
+            resetPlayerForm();
+            
+            // 保存数据
+            saveDataToStorage();
+            
+            // 重新渲染
+            renderPlayersAdmin();
+            renderPlayersPage();
+            
+            // 如果当前在战队详情页且选手属于该战队，重新渲染战队成员
+            if (currentTeamId && teamId === currentTeamId) {
+                renderTeamPlayers(currentTeamId);
+            }
+            
+            alert(editingPlayerId ? '选手更新成功' : '选手添加成功');
+        }
+        
+        // 编辑选手
+        function editPlayer(playerId) {
+            const player = appData.players.find(p => p.id === playerId);
+            
+            if (!player) return;
+            
+            // 填充表单
+            document.getElementById('player-game-id').value = player.gameId;
+            document.getElementById('player-realname').value = player.realname;
+            document.getElementById('player-team-select').value = player.teamId || '';
+            document.getElementById('player-position').value = player.position;
+            document.getElementById('player-age').value = player.age;
+            document.getElementById('player-gender').value = player.gender;
+            document.getElementById('player-rating').value = player.rating;
+            
+            // 设置能力值滑块
+            const stats = player.stats;
+            Object.keys(stats).forEach(stat => {
+                const slider = document.getElementById(`${stat}-slider`);
+                const valueDisplay = document.getElementById(`${stat}-value`);
+                
+                if (slider && valueDisplay) {
+                    slider.value = stats[stat];
+                    valueDisplay.textContent = stats[stat];
+                }
+            });
+            
+            // 显示头像预览
+            const preview = document.getElementById('player-avatar-preview');
+            if (player.avatar) {
+                preview.innerHTML = `<img src="${player.avatar}" alt="${player.gameId}">`;
+            } else {
+                preview.innerHTML = '<i class="fas fa-user" style="font-size: 40px; color: var(--text-gray);"></i>';
+            }
+            
+            // 切换到编辑模式
+            editingPlayerId = playerId;
+            document.getElementById('add-player-btn').style.display = 'none';
+            document.getElementById('update-player-btn').style.display = 'inline-block';
+        }
+        
+        // 删除选手
+        function deletePlayer(playerId) {
+            const playerIndex = appData.players.findIndex(p => p.id === playerId);
+            
+            if (playerIndex !== -1) {
+                const player = appData.players[playerIndex];
+                
+                // 重要：从所属战队的成员列表中移除该选手
+                if (player.teamId) {
+                    const team = appData.teams.find(t => t.id === player.teamId);
+                    if (team && team.players) {
+                        const playerIndexInTeam = team.players.indexOf(playerId);
+                        if (playerIndexInTeam !== -1) {
+                            team.players.splice(playerIndexInTeam, 1);
+                        }
+                    }
+                }
+                
+                // 删除选手
+                appData.players.splice(playerIndex, 1);
+                
+                // 重新排序选手
+                appData.players.sort((a, b) => b.rating - a.rating);
+                
+                // 保存数据
+                saveDataToStorage();
+                
+                // 重新渲染
+                renderPlayersAdmin();
+                renderPlayersPage();
+                
+                // 如果当前在战队详情页且选手属于该战队，重新渲染战队成员
+                if (currentTeamId && player.teamId === currentTeamId) {
+                    renderTeamPlayers(currentTeamId);
+                }
+                
+                alert('选手删除成功');
+            }
+        }
+        
+        // 重置选手表单
+        function resetPlayerForm() {
+            document.getElementById('player-game-id').value = '';
+            document.getElementById('player-realname').value = '';
+            document.getElementById('player-team-select').value = '';
+            document.getElementById('player-position').value = '狙击手';
+            document.getElementById('player-age').value = '20';
+            document.getElementById('player-gender').value = '男';
+            document.getElementById('player-rating').value = '1.00';
+            
+            // 重置能力值滑块为默认值
+            const defaultStats = {
+                firepower: 85,
+                entrying: 78,
+                trading: 82,
+                opening: 76,
+                clutching: 90,
+                sniping: 88,
+                utility: 72,
+                teamwork: 80
+            };
+            
+            Object.keys(defaultStats).forEach(stat => {
+                const slider = document.getElementById(`${stat}-slider`);
+                const valueDisplay = document.getElementById(`${stat}-value`);
+                
+                if (slider && valueDisplay) {
+                    slider.value = defaultStats[stat];
+                    valueDisplay.textContent = defaultStats[stat];
+                }
+            });
+            
+            // 重置头像预览
+            const preview = document.getElementById('player-avatar-preview');
+            preview.innerHTML = '<i class="fas fa-user" style="font-size: 40px; color: var(--text-gray);"></i>';
+            
+            // 重置编辑状态
+            editingPlayerId = null;
+            document.getElementById('add-player-btn').style.display = 'inline-block';
+            document.getElementById('update-player-btn').style.display = 'none';
+        }
+        
+        // 设置数据管理
+        function setupDataManagement() {
+            // 导出数据按钮
+            document.getElementById('export-data-btn')?.addEventListener('click', exportDataToFile);
+            
+            // 导入数据按钮
+            document.getElementById('import-data-input')?.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    importDataFromFile(e.target.files[0]);
+                    e.target.value = ''; // 重置文件输入
+                }
+            });
+            
+            // 清空数据按钮
+            document.getElementById('clear-data-btn')?.addEventListener('click', clearAllData);
+            
+            // 加载默认数据按钮
+            document.getElementById('load-default-data-btn')?.addEventListener('click', function() {
+                if (confirm('恢复默认数据将覆盖当前所有数据，确定要继续吗？')) {
+                    createDefaultData();
+                    saveDataToStorage();
+                    renderAllPages();
+                    alert('默认数据已恢复！');
+                }
+            });
+        }
+        
+        // 初始化表单的默认值
+        function initFormDefaults() {
+            // 设置默认时间为明天
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const formattedTime = tomorrow.toISOString().slice(0, 16);
+            
+            const matchTimeInput = document.getElementById('match-time');
+            if (matchTimeInput) {
+                matchTimeInput.value = formattedTime;
+            }
+        }
+        
+        // ========== 应用初始化 ==========
+        
+        // DOM加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化应用数据
+            initializeAppData();
+            
+            // 渲染所有页面
+            renderAllPages();
+            
+            // 设置事件监听器
+            setupEventListeners();
+            
+            console.log('电竞排行榜网站已初始化，数据已加载');
+        });
+    </script>
+</body>
+</html>
