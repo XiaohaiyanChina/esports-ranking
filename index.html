@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Supabase客户端库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary-color: #2ecc71;
@@ -949,6 +951,91 @@
             gap: 10px;
         }
 
+        /* 密码验证模态框 */
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-modal.active {
+            display: flex;
+        }
+
+        .auth-card {
+            background-color: var(--white-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-heavy);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--light-color);
+        }
+
+        .auth-tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-weight: 600;
+            color: var(--gray-color);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .auth-tab.active {
+            color: var(--primary-color);
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary-color);
+        }
+
+        .auth-content {
+            display: none;
+        }
+
+        .auth-content.active {
+            display: block;
+        }
+
+        /* 批量删除按钮 */
+        .batch-actions {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .select-all-checkbox {
+            margin-right: 10px;
+        }
+
+        /* 复选框样式 */
+        .checkbox-cell {
+            width: 50px;
+            text-align: center;
+        }
+
         /* 响应式设计 */
         @media (max-width: 1200px) {
             .container {
@@ -1210,6 +1297,54 @@
     </style>
 </head>
 <body>
+    <!-- 密码验证模态框 -->
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-auth-tab="login">管理员登录</button>
+                <button class="auth-tab" data-auth-tab="change-password">修改密码</button>
+            </div>
+            
+            <div id="login-content" class="auth-content active">
+                <h3 class="mb-3">管理员登录</h3>
+                <div class="form-group">
+                    <label class="form-label" for="admin-password-input">管理员密码</label>
+                    <input type="password" id="admin-password-input" class="form-control" placeholder="请输入管理员密码">
+                </div>
+                <div class="form-group">
+                    <button id="admin-login-btn" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt"></i> 登录
+                    </button>
+                </div>
+            </div>
+            
+            <div id="change-password-content" class="auth-content">
+                <h3 class="mb-3">修改密码</h3>
+                <div class="form-group">
+                    <label class="form-label" for="current-password">当前密码</label>
+                    <input type="password" id="current-password" class="form-control" placeholder="请输入当前密码">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="security-code">安全码</label>
+                    <input type="text" id="security-code" class="form-control" placeholder="请输入安全码">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="new-password">新密码</label>
+                    <input type="password" id="new-password" class="form-control" placeholder="请输入新密码">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirm-new-password">确认新密码</label>
+                    <input type="password" id="confirm-new-password" class="form-control" placeholder="请确认新密码">
+                </div>
+                <div class="form-group">
+                    <button id="change-password-btn" class="btn btn-primary w-100">
+                        <i class="fas fa-key"></i> 修改密码
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="nav-container">
@@ -1238,7 +1373,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-page="admin">
+                    <a href="#" class="nav-link" data-page="admin" id="admin-nav-link">
                         <i class="fas fa-cog"></i>
                         <span>管理员</span>
                         <span class="admin-badge">ADMIN</span>
@@ -1528,10 +1663,20 @@
             <div class="page-title">
                 <h2><i class="fas fa-cog"></i> 管理员面板</h2>
                 <div class="page-subtitle">管理战队、选手和赛事数据</div>
+                <button id="admin-logout-btn" class="btn btn-warning">
+                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                </button>
             </div>
 
             <div class="admin-section">
                 <h3><i class="fas fa-users"></i> 战队管理</h3>
+                <div class="batch-actions">
+                    <input type="checkbox" id="select-all-teams" class="select-all-checkbox">
+                    <label for="select-all-teams">全选</label>
+                    <button class="btn btn-danger btn-sm" id="batch-delete-teams">
+                        <i class="fas fa-trash"></i> 批量删除选中战队
+                    </button>
+                </div>
                 <div class="form-row">
                     <div class="form-col">
                         <h4 class="mb-3">添加/编辑战队</h4>
@@ -1585,6 +1730,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
+                                        <th class="checkbox-cell">选择</th>
                                         <th>战队</th>
                                         <th width="100">排名</th>
                                         <th width="100">积分</th>
@@ -1602,6 +1748,13 @@
 
             <div class="admin-section">
                 <h3><i class="fas fa-user"></i> 选手管理</h3>
+                <div class="batch-actions">
+                    <input type="checkbox" id="select-all-players" class="select-all-checkbox">
+                    <label for="select-all-players">全选</label>
+                    <button class="btn btn-danger btn-sm" id="batch-delete-players">
+                        <i class="fas fa-trash"></i> 批量删除选中选手
+                    </button>
+                </div>
                 <div class="form-row">
                     <div class="form-col">
                         <h4 class="mb-3">添加/编辑选手</h4>
@@ -1721,6 +1874,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
+                                        <th class="checkbox-cell">选择</th>
                                         <th>选手</th>
                                         <th width="150">战队</th>
                                         <th width="100">Rating</th>
@@ -1738,6 +1892,13 @@
 
             <div class="admin-section">
                 <h3><i class="fas fa-calendar-alt"></i> 赛事管理</h3>
+                <div class="batch-actions">
+                    <input type="checkbox" id="select-all-matches" class="select-all-checkbox">
+                    <label for="select-all-matches">全选</label>
+                    <button class="btn btn-danger btn-sm" id="batch-delete-matches">
+                        <i class="fas fa-trash"></i> 批量删除选中赛事
+                    </button>
+                </div>
                 <div class="form-row">
                     <div class="form-col">
                         <h4 class="mb-3">添加/编辑赛事</h4>
@@ -1808,6 +1969,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
+                                        <th class="checkbox-cell">选择</th>
                                         <th>赛事</th>
                                         <th width="200">战队</th>
                                         <th width="100">比分</th>
@@ -1909,6 +2071,72 @@
     </div>
 
     <script>
+        // ============================================
+        // Supabase 配置 (注释状态，需要时启用)
+        // ============================================
+        /*
+        // 初始化 Supabase 客户端
+        const SUPABASE_URL = 'https://your-project.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-anon-key';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // 使用 Supabase 的数据操作函数示例
+        async function loadDataFromSupabase() {
+            try {
+                // 从 Supabase 加载数据
+                const { data: teams, error: teamsError } = await supabase
+                    .from('teams')
+                    .select('*')
+                    .order('rank', { ascending: true });
+                
+                const { data: players, error: playersError } = await supabase
+                    .from('players')
+                    .select('*')
+                    .order('rating', { ascending: false });
+                
+                const { data: matches, error: matchesError } = await supabase
+                    .from('matches')
+                    .select('*')
+                    .order('date', { ascending: false });
+                
+                if (!teamsError && !playersError && !matchesError) {
+                    appData.teams = teams;
+                    appData.players = players;
+                    appData.matches = matches;
+                } else {
+                    console.error('从 Supabase 加载数据失败:', teamsError, playersError, matchesError);
+                    loadDefaultData();
+                }
+            } catch (error) {
+                console.error('Supabase 连接错误:', error);
+                loadDefaultData();
+            }
+        }
+        
+        async function saveDataToSupabase() {
+            try {
+                // 批量保存数据到 Supabase
+                // 注意：这里需要根据实际表结构调整
+                // 实际应用中可能需要更复杂的数据同步逻辑
+                
+                // 清空现有数据
+                await supabase.from('teams').delete().neq('id', 0);
+                await supabase.from('players').delete().neq('id', 0);
+                await supabase.from('matches').delete().neq('id', 0);
+                
+                // 插入新数据
+                await supabase.from('teams').insert(appData.teams);
+                await supabase.from('players').insert(appData.players);
+                await supabase.from('matches').insert(appData.matches);
+                
+                console.log('数据已保存到 Supabase');
+            } catch (error) {
+                console.error('保存到 Supabase 失败:', error);
+            }
+        }
+        */
+
         // 全局数据存储
         const appData = {
             teams: [],
@@ -1918,7 +2146,8 @@
             currentTeamId: null,
             currentMatchId: null,
             radarChart: null,
-            compareRadarChart: null
+            compareRadarChart: null,
+            adminAuthenticated: false // 管理员认证状态
         };
 
         // 默认数据
@@ -2170,6 +2399,15 @@
 
         // 初始化数据
         function initData() {
+            // 检查管理员密码设置
+            if (!localStorage.getItem('adminPassword')) {
+                localStorage.setItem('adminPassword', 'LD123455');
+                localStorage.setItem('adminSecurityCode', '762ER29781CS');
+            }
+            
+            // 检查管理员认证状态
+            appData.adminAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
+            
             const savedData = localStorage.getItem('ldtvCsgoData');
             if (savedData) {
                 try {
@@ -2233,6 +2471,13 @@
         // 保存数据
         function saveData() {
             localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
+            
+            // 如果启用了Supabase，也保存到云端
+            /*
+            if (typeof supabase !== 'undefined') {
+                saveDataToSupabase();
+            }
+            */
         }
 
         // 工具函数
@@ -2254,6 +2499,12 @@
 
         // 页面切换
         function switchPage(pageId, params = {}) {
+            // 检查管理员页面访问权限
+            if (pageId === 'admin' && !appData.adminAuthenticated) {
+                showAuthModal();
+                return;
+            }
+            
             // 隐藏所有页面
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
@@ -2297,7 +2548,9 @@
                         document.getElementById('players-table').parentNode.parentNode.style.display = 'block';
                         break;
                     case 'admin':
-                        loadAdminData();
+                        if (appData.adminAuthenticated) {
+                            loadAdminData();
+                        }
                         break;
                 }
             }
@@ -2307,6 +2560,99 @@
             
             // 滚动到顶部
             window.scrollTo(0, 0);
+        }
+
+        // 显示认证模态框
+        function showAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.add('active');
+            
+            // 切换到登录标签
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.auth-content').forEach(content => content.classList.remove('active'));
+            document.querySelector('.auth-tab[data-auth-tab="login"]').classList.add('active');
+            document.getElementById('login-content').classList.add('active');
+            
+            // 清空输入框
+            document.getElementById('admin-password-input').value = '';
+            document.getElementById('current-password').value = '';
+            document.getElementById('security-code').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-new-password').value = '';
+        }
+
+        // 隐藏认证模态框
+        function hideAuthModal() {
+            document.getElementById('auth-modal').classList.remove('active');
+        }
+
+        // 管理员登录
+        function adminLogin() {
+            const password = document.getElementById('admin-password-input').value;
+            const savedPassword = localStorage.getItem('adminPassword');
+            
+            if (password === savedPassword) {
+                appData.adminAuthenticated = true;
+                localStorage.setItem('adminAuthenticated', 'true');
+                hideAuthModal();
+                switchPage('admin');
+            } else {
+                alert('密码错误！');
+            }
+        }
+
+        // 修改密码
+        function changePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const securityCode = document.getElementById('security-code').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-new-password').value;
+            
+            const savedPassword = localStorage.getItem('adminPassword');
+            const savedSecurityCode = localStorage.getItem('adminSecurityCode');
+            
+            if (currentPassword !== savedPassword) {
+                alert('当前密码错误！');
+                return;
+            }
+            
+            if (securityCode !== savedSecurityCode) {
+                alert('安全码错误！');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('新密码与确认密码不一致！');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('新密码长度不能少于6位！');
+                return;
+            }
+            
+            localStorage.setItem('adminPassword', newPassword);
+            alert('密码修改成功！');
+            
+            // 清空表单
+            document.getElementById('current-password').value = '';
+            document.getElementById('security-code').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-new-password').value = '';
+            
+            // 切换到登录标签
+            document.querySelectorAll('.auth-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.auth-content').forEach(content => content.classList.remove('active'));
+            document.querySelector('.auth-tab[data-auth-tab="login"]').classList.add('active');
+            document.getElementById('login-content').classList.add('active');
+        }
+
+        // 管理员退出登录
+        function adminLogout() {
+            appData.adminAuthenticated = false;
+            localStorage.setItem('adminAuthenticated', 'false');
+            alert('已退出管理员登录');
+            switchPage('home');
         }
 
         // 加载赛事数据
@@ -2542,7 +2888,7 @@
                     content += `
                         <tr>
                             <td class="d-flex align-center">
-                                <img src="${player.img}" class="player-img-small" data-player-id="${player.id}" style="cursor: pointer;" title="点击查看选手详情">
+                                <img src="${player.img}" class="player-img-small player-img-link" data-player-id="${player.id}" style="cursor: pointer;" title="点击查看选手详情">
                                 <span>${player.name}</span>
                             </td>
                             <td>${stats.kill}</td>
@@ -2586,7 +2932,7 @@
                     content += `
                         <tr>
                             <td class="d-flex align-center">
-                                <img src="${player.img}" class="player-img-small" data-player-id="${player.id}" style="cursor: pointer;" title="点击查看选手详情">
+                                <img src="${player.img}" class="player-img-small player-img-link" data-player-id="${player.id}" style="cursor: pointer;" title="点击查看选手详情">
                                 <span>${player.name}</span>
                             </td>
                             <td>${stats.kill}</td>
@@ -2619,18 +2965,18 @@
             document.getElementById('match-detail-content').innerHTML = content;
             
             // 添加选手头像点击事件 - 跳转到选手详情
-            document.querySelectorAll('.player-img-small[data-player-id]').forEach(img => {
+            document.querySelectorAll('.player-img-link[data-player-id]').forEach(img => {
                 img.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const playerId = parseInt(this.getAttribute('data-player-id'));
-                    showPlayerDetailFromOtherPage(playerId);
+                    showPlayerDetailDirect(playerId);
                 });
             });
         }
 
-        // 从其他页面显示选手详情
-        function showPlayerDetailFromOtherPage(playerId) {
-            // 切换到选手页面
+        // 直接显示选手详情（从任何页面）
+        function showPlayerDetailDirect(playerId) {
+            // 隐藏当前页面，显示选手页面
             switchPage('players');
             
             // 短暂延迟后显示选手详情
@@ -2688,7 +3034,7 @@
                         </div>
                         <div class="team-players">
                             ${topPlayers.map(player => `
-                                <img src="${player.img}" class="player-avatar" 
+                                <img src="${player.img}" class="player-avatar player-img-link" 
                                      title="${player.name} (Rating: ${player.rating.toFixed(2)})" 
                                      data-player-id="${player.id}">
                             `).join('')}
@@ -2730,7 +3076,7 @@
                 avatar.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const playerId = parseInt(this.getAttribute('data-player-id'));
-                    showPlayerDetailFromOtherPage(playerId);
+                    showPlayerDetailDirect(playerId);
                 });
             });
         }
@@ -2769,7 +3115,7 @@
                         <h3><i class="fas fa-users"></i> 战队成员 (${teamPlayers.length}人)</h3>
                         <div class="team-players mt-3" style="justify-content: flex-start; gap: 15px;">
                             ${teamPlayers.map(player => `
-                                <div class="text-center" style="cursor: pointer;" data-player-id="${player.id}">
+                                <div class="text-center player-img-link" style="cursor: pointer;" data-player-id="${player.id}">
                                     <img src="${player.img}" class="player-avatar">
                                     <div class="mt-2">
                                         <div style="font-weight: 700;">${player.name}</div>
@@ -2872,10 +3218,10 @@
             document.getElementById('team-detail-content').innerHTML = content;
             
             // 添加选手点击事件
-            document.querySelectorAll('[data-player-id]').forEach(element => {
+            document.querySelectorAll('.player-img-link[data-player-id]').forEach(element => {
                 element.addEventListener('click', function() {
                     const playerId = parseInt(this.getAttribute('data-player-id'));
-                    showPlayerDetailFromOtherPage(playerId);
+                    showPlayerDetailDirect(playerId);
                 });
             });
         }
@@ -2920,7 +3266,7 @@
                     </td>
                     <td>
                         <div class="d-flex align-center">
-                            <img src="${player.img}" class="player-img-small" alt="${player.name}" data-player-id="${player.id}" style="cursor: pointer;">
+                            <img src="${player.img}" class="player-img-small player-img-link" alt="${player.name}" data-player-id="${player.id}" style="cursor: pointer;">
                             <div>
                                 <div style="font-weight: 700; font-size: 1.1rem;">${player.name}</div>
                                 <div style="font-size: 0.85rem; color: #7f8c8d;">${player.realName || ''}</div>
@@ -2959,7 +3305,7 @@
             });
             
             // 添加选手头像点击事件
-            document.querySelectorAll('.player-img-small[data-player-id]').forEach(img => {
+            document.querySelectorAll('.player-img-link[data-player-id]').forEach(img => {
                 img.addEventListener('click', function() {
                     const playerId = parseInt(this.getAttribute('data-player-id'));
                     showPlayerDetail(playerId);
@@ -3219,6 +3565,9 @@
             
             // 隐藏赛事详情编辑表单
             document.getElementById('match-edit-form').classList.remove('active');
+            
+            // 初始化全选复选框
+            initBatchDeleteCheckboxes();
         }
 
         // 更新滑块值显示
@@ -3234,6 +3583,36 @@
             }
         }
 
+        // 初始化批量删除复选框
+        function initBatchDeleteCheckboxes() {
+            // 战队全选
+            const selectAllTeams = document.getElementById('select-all-teams');
+            if (selectAllTeams) {
+                selectAllTeams.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.team-checkbox');
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                });
+            }
+            
+            // 选手全选
+            const selectAllPlayers = document.getElementById('select-all-players');
+            if (selectAllPlayers) {
+                selectAllPlayers.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.player-checkbox');
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                });
+            }
+            
+            // 赛事全选
+            const selectAllMatches = document.getElementById('select-all-matches');
+            if (selectAllMatches) {
+                selectAllMatches.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.match-checkbox');
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                });
+            }
+        }
+
         // 加载管理员战队列表
         function loadAdminTeamsList() {
             const list = document.getElementById('admin-teams-list');
@@ -3242,6 +3621,9 @@
             appData.teams.forEach(team => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="team-checkbox" data-team-id="${team.id}">
+                    </td>
                     <td>
                         <div class="d-flex align-center">
                             <img src="${team.logo}" class="team-logo-small" alt="${team.name}">
@@ -3297,6 +3679,9 @@
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="player-checkbox" data-player-id="${player.id}">
+                    </td>
                     <td>
                         <div class="d-flex align-center">
                             <img src="${player.img}" class="player-img-small" alt="${player.name}">
@@ -3359,6 +3744,9 @@
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="match-checkbox" data-match-id="${match.id}">
+                    </td>
                     <td>
                         <div style="font-weight: 700;">${match.tournament}</div>
                         <div style="font-size: 0.85rem; color: #7f8c8d;">${match.type === 'today' ? '今日赛程' : match.type === 'past' ? '往期赛果' : '未来赛事'}</div>
@@ -3581,6 +3969,52 @@
             alert('战队已删除，原战队选手已设为自由选手。');
         }
 
+        // 批量删除战队
+        function batchDeleteTeams() {
+            const checkboxes = document.querySelectorAll('.team-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请先选择要删除的战队');
+                return;
+            }
+            
+            if (!confirm(`确定要删除选中的 ${checkboxes.length} 个战队吗？战队删除后，选手将变为自由选手。`)) {
+                return;
+            }
+            
+            const teamIds = [];
+            checkboxes.forEach(cb => {
+                teamIds.push(parseInt(cb.getAttribute('data-team-id')));
+            });
+            
+            // 批量删除
+            teamIds.forEach(teamId => {
+                // 删除战队
+                appData.teams = appData.teams.filter(t => t.id !== teamId);
+                
+                // 将原战队选手设为自由选手
+                appData.players.forEach(player => {
+                    if (player.teamId === teamId) {
+                        player.teamId = null;
+                    }
+                });
+                
+                // 删除与该战队相关的比赛
+                appData.matches = appData.matches.filter(m => m.team1Id !== teamId && m.team2Id !== teamId);
+            });
+            
+            // 保存数据并刷新
+            saveData();
+            loadAdminTeamsList();
+            loadAdminPlayersList();
+            loadAdminMatchesList();
+            loadTeams();
+            
+            // 取消全选
+            document.getElementById('select-all-teams').checked = false;
+            
+            alert(`成功删除 ${teamIds.length} 个战队`);
+        }
+
         // 编辑选手
         function editPlayer(playerId) {
             const player = getPlayerById(playerId);
@@ -3651,6 +4085,59 @@
             alert('选手已删除。');
         }
 
+        // 批量删除选手
+        function batchDeletePlayers() {
+            const checkboxes = document.querySelectorAll('.player-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请先选择要删除的选手');
+                return;
+            }
+            
+            if (!confirm(`确定要删除选中的 ${checkboxes.length} 个选手吗？`)) {
+                return;
+            }
+            
+            const playerIds = [];
+            checkboxes.forEach(cb => {
+                playerIds.push(parseInt(cb.getAttribute('data-player-id')));
+            });
+            
+            // 批量删除
+            playerIds.forEach(playerId => {
+                // 删除选手
+                appData.players = appData.players.filter(p => p.id !== playerId);
+                
+                // 从战队中移除该选手
+                appData.teams.forEach(team => {
+                    if (team.players) {
+                        team.players = team.players.filter(pId => pId !== playerId);
+                    }
+                });
+                
+                // 从比赛数据中移除该选手
+                appData.matches.forEach(match => {
+                    if (match.stats) {
+                        if (match.stats.team1 && match.stats.team1[playerId]) {
+                            delete match.stats.team1[playerId];
+                        }
+                        if (match.stats.team2 && match.stats.team2[playerId]) {
+                            delete match.stats.team2[playerId];
+                        }
+                    }
+                });
+            });
+            
+            // 保存数据并刷新
+            saveData();
+            loadAdminPlayersList();
+            loadPlayers();
+            
+            // 取消全选
+            document.getElementById('select-all-players').checked = false;
+            
+            alert(`成功删除 ${playerIds.length} 个选手`);
+        }
+
         // 删除赛事
         function deleteMatch(matchId) {
             appData.matches = appData.matches.filter(m => m.id !== matchId);
@@ -3661,6 +4148,37 @@
             loadMatches();
             
             alert('赛事已删除。');
+        }
+
+        // 批量删除赛事
+        function batchDeleteMatches() {
+            const checkboxes = document.querySelectorAll('.match-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请先选择要删除的赛事');
+                return;
+            }
+            
+            if (!confirm(`确定要删除选中的 ${checkboxes.length} 个赛事吗？`)) {
+                return;
+            }
+            
+            const matchIds = [];
+            checkboxes.forEach(cb => {
+                matchIds.push(parseInt(cb.getAttribute('data-match-id')));
+            });
+            
+            // 批量删除
+            appData.matches = appData.matches.filter(m => !matchIds.includes(m.id));
+            
+            // 保存数据并刷新
+            saveData();
+            loadAdminMatchesList();
+            loadMatches();
+            
+            // 取消全选
+            document.getElementById('select-all-matches').checked = false;
+            
+            alert(`成功删除 ${matchIds.length} 个赛事`);
         }
 
         // 初始化事件监听
@@ -3704,6 +4222,35 @@
                 document.getElementById('players-table').parentNode.parentNode.style.display = 'block';
                 document.getElementById('player-detail').style.display = 'none';
             });
+
+            // 管理员登录按钮
+            document.getElementById('admin-login-btn').addEventListener('click', adminLogin);
+            
+            // 修改密码按钮
+            document.getElementById('change-password-btn').addEventListener('click', changePassword);
+            
+            // 管理员退出按钮
+            document.getElementById('admin-logout-btn').addEventListener('click', adminLogout);
+            
+            // 认证标签页切换
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-auth-tab');
+                    
+                    // 移除所有active类
+                    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.auth-content').forEach(c => c.classList.remove('active'));
+                    
+                    // 激活当前标签
+                    this.classList.add('active');
+                    document.getElementById(tabId + '-content').classList.add('active');
+                });
+            });
+
+            // 批量删除按钮
+            document.getElementById('batch-delete-teams').addEventListener('click', batchDeleteTeams);
+            document.getElementById('batch-delete-players').addEventListener('click', batchDeletePlayers);
+            document.getElementById('batch-delete-matches').addEventListener('click', batchDeleteMatches);
 
             // 战队表单提交
             document.getElementById('team-form').addEventListener('submit', function(e) {
