@@ -2071,15 +2071,14 @@
     </div>
 
     <script>
-        // ============================================
-        // Supabase 配置 (注释状态，需要时启用)
-        // ============================================
-        /*
-        // 初始化 Supabase 客户端
-        const SUPABASE_URL = 'https://your-project.supabase.co';
-        const SUPABASE_ANON_KEY = 'your-anon-key';
-        
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+       // ============================================
+// Supabase 配置
+// ============================================
+// 初始化 Supabase 客户端
+const SUPABASE_URL = https://gyhqbjfbcjgdmewjakxf.supabase.co; // 替换为你的URL
+const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5aHFiamZiY2pnZG1ld2pha3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNzgzOTgsImV4cCI6MjA4MDk1NDM5OH0.6BxFrfV-L84EfDxafQqqGuhB7TpZ8WpZVSNz54Gn6Ws; // 替换为你的key
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // 使用 Supabase 的数据操作函数示例
         async function loadDataFromSupabase() {
@@ -2407,6 +2406,8 @@
             
             // 检查管理员认证状态
             appData.adminAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
+  		
+		loadDataFromSupabase();
             
             const savedData = localStorage.getItem('ldtvCsgoData');
             if (savedData) {
