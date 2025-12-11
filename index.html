@@ -2080,54 +2080,62 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 使用 Supabase 的数据操作函数示例
-async function loadDataFromSupabase() {
-    try {
-        // 从 Supabase 加载数据
-        const { data: teams, error: teamsError } = await supabase
-            .from('teams')
-            .select('*')
-            .order('rank', { ascending: true });
-        
-        const { data: players, error: playersError } = await supabase
-            .from('players')
-            .select('*')
-            .order('rating', { ascending: false });
-        
-        const { data: matches, error: matchesError } = await supabase
-            .from('matches')
-            .select('*')
-            .order('date', { ascending: false });
-        
-        if (!teamsError && !playersError && !matchesError) {
-            appData.teams = teams;
-            appData.players = players;
-            appData.matches = matches;
-            
-            // 确保数据完整性
-            validateData();
-            
-            // 保存到本地存储作为缓存
-            localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
-            
-            console.log('从Supabase加载数据成功');
-        } else {
-            console.error('从 Supabase 加载数据失败:', teamsError, playersError, matchesError);
-            // 如果Supabase加载失败，使用本地存储或默认数据
-            loadFromLocalStorage();
+        // 使用 Supabase 的数据操作函数示例
+        async function loadDataFromSupabase() {
+            try {
+                // 从 Supabase 加载数据
+                const { data: teams, error: teamsError } = await supabase
+                    .from('teams')
+                    .select('*')
+                    .order('rank', { ascending: true });
+                
+                const { data: players, error: playersError } = await supabase
+                    .from('players')
+                    .select('*')
+                    .order('rating', { ascending: false });
+                
+                const { data: matches, error: matchesError } = await supabase
+                    .from('matches')
+                    .select('*')
+                    .order('date', { ascending: false });
+                
+                if (!teamsError && !playersError && !matchesError) {
+                    // 转换数据格式，如果Supabase中没有realName字段，则从name字段复制
+                    appData.teams = teams;
+                    appData.players = players.map(player => {
+                        // 如果数据库中没有realName字段，使用name作为realName
+                        if (!player.realName) {
+                            player.realName = player.name;
+                        }
+                        return player;
+                    });
+                    appData.matches = matches;
+                    
+                    // 确保数据完整性
+                    validateData();
+                    
+                    // 保存到本地存储作为缓存
+                    localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
+                    
+                    console.log('从Supabase加载数据成功');
+                } else {
+                    console.error('从 Supabase 加载数据失败:', teamsError, playersError, matchesError);
+                    // 如果Supabase加载失败，使用本地存储或默认数据
+                    loadFromLocalStorage();
+                }
+            } catch (error) {
+                console.error('Supabase 连接错误:', error);
+                // 连接错误，使用本地存储或默认数据
+                loadFromLocalStorage();
+            }
         }
-    } catch (error) {
-        console.error('Supabase 连接错误:', error);
-        // 连接错误，使用本地存储或默认数据
-        loadFromLocalStorage();
-    }
-}
 
-                async function saveDataToSupabase() {
+                        async function saveDataToSupabase() {
             try {
                 console.log('开始保存数据到Supabase...');
                 
                 // 准备数据，确保格式正确
+                // 注意：realName列不存在，所以不要包含它
                 const teamsData = appData.teams.map(team => ({
                     id: team.id,
                     name: team.name,
@@ -2139,10 +2147,11 @@ async function loadDataFromSupabase() {
                     players: Array.isArray(team.players) ? team.players : []
                 }));
                 
+                // 重要：删除realName字段，因为表中不存在
                 const playersData = appData.players.map(player => ({
                     id: player.id,
                     name: player.name,
-                    realName: player.realName || null,
+                    // realName: player.realName || null, // 注释掉这行
                     teamId: player.teamId || null,
                     age: player.age || null,
                     country: player.country || null,
@@ -4510,8 +4519,9 @@ function loadFromLocalStorage() {
                         if (index !== -1) {
                             const oldTeamId = appData.players[index].teamId;
                             
-                            // 更新选手信息
+                            // 更新选手信息 - 注意：不保存realName到数据库
                             appData.players[index].name = playerName;
+                            // 只在本地保留realName，不保存到数据库
                             appData.players[index].realName = playerRealName || playerName;
                             appData.players[index].teamId = playerTeamId;
                             appData.players[index].age = playerAge;
@@ -4558,6 +4568,7 @@ function loadFromLocalStorage() {
                         const newPlayer = {
                             id: newId,
                             name: playerName,
+                            // 只在本地保存realName
                             realName: playerRealName || playerName,
                             teamId: playerTeamId,
                             age: playerAge,
