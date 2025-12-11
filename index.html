@@ -2081,7 +2081,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // 使用 Supabase 的数据操作函数示例
-        async function loadDataFromSupabase() {
+                async function loadDataFromSupabase() {
             try {
                 // 从 Supabase 加载数据
                 const { data: teams, error: teamsError } = await supabase
@@ -2100,15 +2100,22 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     .order('date', { ascending: false });
                 
                 if (!teamsError && !playersError && !matchesError) {
-                    // 转换数据格式，如果Supabase中没有realName字段，则从name字段复制
+                    // 转换数据格式
                     appData.teams = teams;
+                    
+                    // 处理players数据：将teamld字段映射为teamId
                     appData.players = players.map(player => {
                         // 如果数据库中没有realName字段，使用name作为realName
                         if (!player.realName) {
                             player.realName = player.name;
                         }
+                        // 将teamld字段映射为teamId
+                        player.teamId = player.teamld;
+                        // 删除原始的teamld字段以避免混淆
+                        delete player.teamld;
                         return player;
                     });
+                    
                     appData.matches = matches;
                     
                     // 确保数据完整性
@@ -2134,8 +2141,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             try {
                 console.log('开始保存数据到Supabase...');
                 
-                // 准备数据，确保格式正确
-                // 注意：realName列不存在，所以不要包含它
+                                // 准备数据，确保格式正确
                 const teamsData = appData.teams.map(team => ({
                     id: team.id,
                     name: team.name,
@@ -2147,12 +2153,11 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     players: Array.isArray(team.players) ? team.players : []
                 }));
                 
-                // 重要：删除realName字段，因为表中不存在
+                // 注意：表列名是 'teamld' 而不是 'teamId'
                 const playersData = appData.players.map(player => ({
                     id: player.id,
                     name: player.name,
-                    // realName: player.realName || null, // 注释掉这行
-                    teamId: player.teamId || null,
+                    teamld: player.teamId || null,  // 修改这里：teamld 而不是 teamId
                     age: player.age || null,
                     country: player.country || null,
                     rating: player.rating || 1.0,
@@ -2549,7 +2554,7 @@ function loadFromLocalStorage() {
         }
 
         // 验证数据完整性
-                function validateData() {
+                        function validateData() {
             // 确保每个战队都有players数组
             appData.teams.forEach(team => {
                 if (!team.players) team.players = [];
@@ -2558,6 +2563,12 @@ function loadFromLocalStorage() {
             
             // 确保每个选手都有完整的stats对象和achievements数组
             appData.players.forEach(player => {
+                // 确保有teamId字段（可能从teamld映射而来）
+                if (player.teamld !== undefined && player.teamId === undefined) {
+                    player.teamId = player.teamld;
+                    delete player.teamld;
+                }
+                
                 if (!player.stats) {
                     player.stats = {
                         firepower: 50,
