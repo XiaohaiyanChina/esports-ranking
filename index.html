@@ -2123,34 +2123,119 @@ async function loadDataFromSupabase() {
     }
 }
 
-        async function saveDataToSupabase() {
+                async function saveDataToSupabase() {
             try {
                 console.log('开始保存数据到Supabase...');
                 
-                // 清空现有数据
-                const { error: deleteTeamsError } = await supabase.from('teams').delete().neq('id', 0);
-                const { error: deletePlayersError } = await supabase.from('players').delete().neq('id', 0);
-                const { error: deleteMatchesError } = await supabase.from('matches').delete().neq('id', 0);
+                // 准备数据，确保格式正确
+                const teamsData = appData.teams.map(team => ({
+                    id: team.id,
+                    name: team.name,
+                    rank: team.rank,
+                    points: team.points,
+                    coach: team.coach || null,
+                    logo: team.logo,
+                    achievements: Array.isArray(team.achievements) ? team.achievements : [],
+                    players: Array.isArray(team.players) ? team.players : []
+                }));
                 
-                if (deleteTeamsError || deletePlayersError || deleteMatchesError) {
-                    console.error('删除现有数据失败:', deleteTeamsError, deletePlayersError, deleteMatchesError);
-                    throw new Error('清除现有数据失败');
+                const playersData = appData.players.map(player => ({
+                    id: player.id,
+                    name: player.name,
+                    realName: player.realName || null,
+                    teamId: player.teamId || null,
+                    age: player.age || null,
+                    country: player.country || null,
+                    rating: player.rating || 1.0,
+                    img: player.img,
+                    achievements: Array.isArray(player.achievements) ? player.achievements : [],
+                    stats: player.stats || {}
+                }));
+                
+                const matchesData = appData.matches.map(match => ({
+                    id: match.id,
+                    tournament: match.tournament,
+                    team1Id: match.team1Id,
+                    team2Id: match.team2Id,
+                    score1: match.score1 || null,
+                    score2: match.score2 || null,
+                    date: match.date,
+                    time: match.time || null,
+                    type: match.type,
+                    stats: match.stats || {}
+                }));
+                
+                console.log('准备插入的数据:', { teamsData, playersData, matchesData });
+                
+                // 按顺序删除和插入，避免外键约束错误
+                // 先删除matches（引用teams和players）
+                const { error: deleteMatchesError } = await supabase
+                    .from('matches')
+                    .delete()
+                    .neq('id', 0);
+                
+                if (deleteMatchesError) {
+                    console.error('删除matches失败:', deleteMatchesError);
+                    throw new Error('删除matches失败: ' + deleteMatchesError.message);
                 }
                 
-                // 插入新数据
-                const { error: teamsError } = await supabase.from('teams').insert(appData.teams);
-                const { error: playersError } = await supabase.from('players').insert(appData.players);
-                const { error: matchesError } = await supabase.from('matches').insert(appData.matches);
+                // 删除players
+                const { error: deletePlayersError } = await supabase
+                    .from('players')
+                    .delete()
+                    .neq('id', 0);
                 
-                if (teamsError || playersError || matchesError) {
-                    console.error('插入新数据失败:', teamsError, playersError, matchesError);
-                    throw new Error('插入新数据失败');
+                if (deletePlayersError) {
+                    console.error('删除players失败:', deletePlayersError);
+                    throw new Error('删除players失败: ' + deletePlayersError.message);
+                }
+                
+                // 删除teams
+                const { error: deleteTeamsError } = await supabase
+                    .from('teams')
+                    .delete()
+                    .neq('id', 0);
+                
+                if (deleteTeamsError) {
+                    console.error('删除teams失败:', deleteTeamsError);
+                    throw new Error('删除teams失败: ' + deleteTeamsError.message);
+                }
+                
+                // 按顺序插入，先teams，再players，最后matches
+                const { error: teamsError } = await supabase
+                    .from('teams')
+                    .insert(teamsData);
+                
+                if (teamsError) {
+                    console.error('插入teams失败:', teamsError);
+                    throw new Error('插入teams失败: ' + teamsError.message);
+                }
+                
+                const { error: playersError } = await supabase
+                    .from('players')
+                    .insert(playersData);
+                
+                if (playersError) {
+                    console.error('插入players失败:', playersError);
+                    throw new Error('插入players失败: ' + playersError.message);
+                }
+                
+                const { error: matchesError } = await supabase
+                    .from('matches')
+                    .insert(matchesData);
+                
+                if (matchesError) {
+                    console.error('插入matches失败:', matchesError);
+                    throw new Error('插入matches失败: ' + matchesError.message);
                 }
                 
                 console.log('数据已成功保存到 Supabase');
+                return true;
+                
             } catch (error) {
                 console.error('保存到 Supabase 失败:', error);
                 alert('保存到云端失败: ' + error.message);
+                return false;
             }
         }
 
@@ -2507,18 +2592,28 @@ function loadFromLocalStorage() {
         }
 
         // 保存数据
-               function saveData() {
+                      function saveData() {
             try {
+                // 先保存到本地存储
                 localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
-                console.log('数据已保存到本地存储:', appData);
+                console.log('数据已保存到本地存储');
                 
-                // 保存到Supabase
+                // 尝试保存到Supabase
                 if (typeof supabase !== 'undefined') {
-                    saveDataToSupabase();
+                    // 异步保存到Supabase，不阻塞主线程
+                    saveDataToSupabase().then(success => {
+                        if (success) {
+                            console.log('数据同步到云端成功');
+                        } else {
+                            console.warn('数据保存到本地，但云端同步失败');
+                        }
+                    }).catch(error => {
+                        console.error('Supabase保存异常:', error);
+                    });
                 }
             } catch (error) {
                 console.error('保存数据失败:', error);
-                alert('保存数据失败，请检查控制台');
+                // 不要弹窗，避免干扰用户操作
             }
         }
 
