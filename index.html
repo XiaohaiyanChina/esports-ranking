@@ -2123,27 +2123,36 @@ async function loadDataFromSupabase() {
     }
 }
 
-async function saveDataToSupabase() {
-    try {
-        // 批量保存数据到 Supabase
-        // 注意：这里需要根据实际表结构调整
-        // 实际应用中可能需要更复杂的数据同步逻辑
-        
-        // 清空现有数据
-        await supabase.from('teams').delete().neq('id', 0);
-        await supabase.from('players').delete().neq('id', 0);
-        await supabase.from('matches').delete().neq('id', 0);
-        
-        // 插入新数据
-        await supabase.from('teams').insert(appData.teams);
-        await supabase.from('players').insert(appData.players);
-        await supabase.from('matches').insert(appData.matches);
-        
-        console.log('数据已保存到 Supabase');
-    } catch (error) {
-        console.error('保存到 Supabase 失败:', error);
-    }
-}
+        async function saveDataToSupabase() {
+            try {
+                console.log('开始保存数据到Supabase...');
+                
+                // 清空现有数据
+                const { error: deleteTeamsError } = await supabase.from('teams').delete().neq('id', 0);
+                const { error: deletePlayersError } = await supabase.from('players').delete().neq('id', 0);
+                const { error: deleteMatchesError } = await supabase.from('matches').delete().neq('id', 0);
+                
+                if (deleteTeamsError || deletePlayersError || deleteMatchesError) {
+                    console.error('删除现有数据失败:', deleteTeamsError, deletePlayersError, deleteMatchesError);
+                    throw new Error('清除现有数据失败');
+                }
+                
+                // 插入新数据
+                const { error: teamsError } = await supabase.from('teams').insert(appData.teams);
+                const { error: playersError } = await supabase.from('players').insert(appData.players);
+                const { error: matchesError } = await supabase.from('matches').insert(appData.matches);
+                
+                if (teamsError || playersError || matchesError) {
+                    console.error('插入新数据失败:', teamsError, playersError, matchesError);
+                    throw new Error('插入新数据失败');
+                }
+                
+                console.log('数据已成功保存到 Supabase');
+            } catch (error) {
+                console.error('保存到 Supabase 失败:', error);
+                alert('保存到云端失败: ' + error.message);
+            }
+        }
 
 // 新增：从本地存储加载数据的辅助函数
 function loadFromLocalStorage() {
@@ -2446,14 +2455,14 @@ function loadFromLocalStorage() {
         }
 
         // 验证数据完整性
-        function validateData() {
+                function validateData() {
             // 确保每个战队都有players数组
             appData.teams.forEach(team => {
                 if (!team.players) team.players = [];
                 if (!team.achievements) team.achievements = [];
             });
             
-            // 确保每个选手都有stats对象和achievements数组
+            // 确保每个选手都有完整的stats对象和achievements数组
             appData.players.forEach(player => {
                 if (!player.stats) {
                     player.stats = {
@@ -2464,8 +2473,26 @@ function loadFromLocalStorage() {
                         clutching: 50,
                         utility: 50
                     };
+                } else {
+                    // 确保每个属性都有值
+                    const defaultStats = {
+                        firepower: 50,
+                        entrying: 50,
+                        trading: 50,
+                        opening: 50,
+                        clutching: 50,
+                        utility: 50
+                    };
+                    
+                    Object.keys(defaultStats).forEach(key => {
+                        if (player.stats[key] === undefined || player.stats[key] === null) {
+                            player.stats[key] = defaultStats[key];
+                        }
+                    });
                 }
+                
                 if (!player.achievements) player.achievements = [];
+                if (!player.rating) player.rating = 1.0;
             });
             
             // 确保每场比赛都有stats对象
@@ -2480,14 +2507,20 @@ function loadFromLocalStorage() {
         }
 
         // 保存数据
-        function saveData() {
-    localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
-    
-    // 保存到Supabase
-    if (typeof supabase !== 'undefined') {
-        saveDataToSupabase();
-    }
-}
+               function saveData() {
+            try {
+                localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
+                console.log('数据已保存到本地存储:', appData);
+                
+                // 保存到Supabase
+                if (typeof supabase !== 'undefined') {
+                    saveDataToSupabase();
+                }
+            } catch (error) {
+                console.error('保存数据失败:', error);
+                alert('保存数据失败，请检查控制台');
+            }
+        }
 
         // 工具函数
         function getTeamById(id) {
@@ -3580,13 +3613,17 @@ function loadFromLocalStorage() {
         }
 
         // 更新滑块值显示
-        function updateSliderValue(sliderId, valueId) {
+                function updateSliderValue(sliderId, valueId) {
             const slider = document.getElementById(sliderId);
             const valueSpan = document.getElementById(valueId);
             
             if (slider && valueSpan) {
-                valueSpan.textContent = slider.value;
+                // 确保初始值显示正确
+                valueSpan.textContent = slider.value || 50;
+                
                 slider.addEventListener('input', function() {
+                    const value = parseInt(this.value) || 50;
+                    this.value = Math.min(100, Math.max(0, value)); // 确保在0-100范围内
                     valueSpan.textContent = this.value;
                 });
             }
@@ -4025,9 +4062,12 @@ function loadFromLocalStorage() {
         }
 
         // 编辑选手
-        function editPlayer(playerId) {
+                function editPlayer(playerId) {
             const player = getPlayerById(playerId);
-            if (!player) return;
+            if (!player) {
+                alert('选手不存在');
+                return;
+            }
             
             document.getElementById('player-id').value = player.id;
             document.getElementById('player-name').value = player.name;
@@ -4038,21 +4078,24 @@ function loadFromLocalStorage() {
             document.getElementById('player-rating-input').value = player.rating || 1.0;
             document.getElementById('player-achievements').value = Array.isArray(player.achievements) ? player.achievements.join(', ') : '';
             
-            // 设置滑块值
-            document.getElementById('player-firepower-input').value = player.stats.firepower;
-            document.getElementById('player-entrying-input').value = player.stats.entrying;
-            document.getElementById('player-trading-input').value = player.stats.trading;
-            document.getElementById('player-opening-input').value = player.stats.opening;
-            document.getElementById('player-clutching-input').value = player.stats.clutching;
-            document.getElementById('player-utility-input').value = player.stats.utility || 50;
+            // 确保滑块值存在
+            const stats = player.stats || {};
             
-            // 更新滑块值显示
-            document.getElementById('firepower-value').textContent = player.stats.firepower;
-            document.getElementById('entrying-value').textContent = player.stats.entrying;
-            document.getElementById('trading-value').textContent = player.stats.trading;
-            document.getElementById('opening-value').textContent = player.stats.opening;
-            document.getElementById('clutching-value').textContent = player.stats.clutching;
-            document.getElementById('utility-value').textContent = player.stats.utility || 50;
+            // 设置滑块值（确保有默认值）
+            document.getElementById('player-firepower-input').value = stats.firepower || 50;
+            document.getElementById('player-entrying-input').value = stats.entrying || 50;
+            document.getElementById('player-trading-input').value = stats.trading || 50;
+            document.getElementById('player-opening-input').value = stats.opening || 50;
+            document.getElementById('player-clutching-input').value = stats.clutching || 50;
+            document.getElementById('player-utility-input').value = stats.utility || 50;
+            
+            // 立即更新滑块值显示
+            document.getElementById('firepower-value').textContent = stats.firepower || 50;
+            document.getElementById('entrying-value').textContent = stats.entrying || 50;
+            document.getElementById('trading-value').textContent = stats.trading || 50;
+            document.getElementById('opening-value').textContent = stats.opening || 50;
+            document.getElementById('clutching-value').textContent = stats.clutching || 50;
+            document.getElementById('utility-value').textContent = stats.utility || 50;
             
             // 显示图片预览
             const imgPreview = document.getElementById('player-img-preview');
@@ -4328,166 +4371,161 @@ function loadFromLocalStorage() {
                 document.getElementById('team-logo-preview').innerHTML = '';
             });
 
-            // 选手表单提交
+                        // 选手表单提交
             document.getElementById('player-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const playerId = document.getElementById('player-id').value;
-                const playerName = document.getElementById('player-name').value.trim();
-                const playerRealName = document.getElementById('player-realname').value.trim();
-                const playerTeamId = document.getElementById('player-team').value ? parseInt(document.getElementById('player-team').value) : null;
-                const playerAge = document.getElementById('player-age').value ? parseInt(document.getElementById('player-age').value) : null;
-                const playerCountry = document.getElementById('player-country').value.trim();
-                const playerRating = document.getElementById('player-rating-input').value ? parseFloat(document.getElementById('player-rating-input').value) : 1.0;
-                const playerAchievements = document.getElementById('player-achievements').value
-                    .split(',')
-                    .map(a => a.trim())
-                    .filter(a => a.length > 0);
-                
-                // 获取选手数据
-                const firepower = parseInt(document.getElementById('player-firepower-input').value);
-                const entrying = parseInt(document.getElementById('player-entrying-input').value);
-                const trading = parseInt(document.getElementById('player-trading-input').value);
-                const opening = parseInt(document.getElementById('player-opening-input').value);
-                const clutching = parseInt(document.getElementById('player-clutching-input').value);
-                const utility = parseInt(document.getElementById('player-utility-input').value);
-                
-                // 获取图片
-                const imgPreview = document.getElementById('player-img-preview');
-                let playerImg = "https://via.placeholder.com/200/2ecc71/FFFFFF?text=" + (playerName.charAt(0) || 'P');
-                if (imgPreview.querySelector('img')) {
-                    playerImg = imgPreview.querySelector('img').src;
-                }
-                
-                if (playerId) {
-                    // 编辑现有选手
-                    const index = appData.players.findIndex(p => p.id === parseInt(playerId));
-                    if (index !== -1) {
-                        const oldTeamId = appData.players[index].teamId;
-                        
-                        // 更新选手信息
-                        appData.players[index].name = playerName;
-                        appData.players[index].realName = playerRealName || playerName;
-                        appData.players[index].teamId = playerTeamId;
-                        appData.players[index].age = playerAge;
-                        appData.players[index].country = playerCountry;
-                        appData.players[index].rating = playerRating;
-                        appData.players[index].img = playerImg;
-                        appData.players[index].achievements = playerAchievements;
-                        appData.players[index].stats = {
-                            firepower,
-                            entrying,
-                            trading,
-                            opening,
-                            clutching,
-                            utility
-                        };
-                        
-                        // 如果更换了战队，更新战队成员列表
-                        if (oldTeamId !== playerTeamId) {
-                            // 从原战队移除
-                            if (oldTeamId) {
-                                const oldTeam = getTeamById(oldTeamId);
-                                if (oldTeam && oldTeam.players) {
-                                    oldTeam.players = oldTeam.players.filter(pId => pId !== parseInt(playerId));
-                                }
-                            }
+                try {
+                    const playerId = document.getElementById('player-id').value;
+                    const playerName = document.getElementById('player-name').value.trim();
+                    const playerRealName = document.getElementById('player-realname').value.trim();
+                    const playerTeamId = document.getElementById('player-team').value ? parseInt(document.getElementById('player-team').value) : null;
+                    const playerAge = document.getElementById('player-age').value ? parseInt(document.getElementById('player-age').value) : null;
+                    const playerCountry = document.getElementById('player-country').value.trim();
+                    const playerRating = document.getElementById('player-rating-input').value ? parseFloat(document.getElementById('player-rating-input').value) : 1.0;
+                    const playerAchievements = document.getElementById('player-achievements').value
+                        .split(',')
+                        .map(a => a.trim())
+                        .filter(a => a.length > 0);
+                    
+                    // 验证必填字段
+                    if (!playerName) {
+                        alert('选手ID不能为空！');
+                        return;
+                    }
+                    
+                    // 获取滑块值（确保有默认值）
+                    const firepower = parseInt(document.getElementById('player-firepower-input').value) || 50;
+                    const entrying = parseInt(document.getElementById('player-entrying-input').value) || 50;
+                    const trading = parseInt(document.getElementById('player-trading-input').value) || 50;
+                    const opening = parseInt(document.getElementById('player-opening-input').value) || 50;
+                    const clutching = parseInt(document.getElementById('player-clutching-input').value) || 50;
+                    const utility = parseInt(document.getElementById('player-utility-input').value) || 50;
+                    
+                    // 获取图片
+                    const imgPreview = document.getElementById('player-img-preview');
+                    let playerImg = "https://via.placeholder.com/200/2ecc71/FFFFFF?text=" + (playerName.charAt(0) || 'P');
+                    if (imgPreview.querySelector('img')) {
+                        playerImg = imgPreview.querySelector('img').src;
+                    }
+                    
+                    if (playerId) {
+                        // 编辑现有选手
+                        const index = appData.players.findIndex(p => p.id === parseInt(playerId));
+                        if (index !== -1) {
+                            const oldTeamId = appData.players[index].teamId;
                             
-                            // 添加到新战队
-                            if (playerTeamId) {
-                                const newTeam = getTeamById(playerTeamId);
-                                if (newTeam) {
-                                    if (!newTeam.players) newTeam.players = [];
-                                    if (!newTeam.players.includes(parseInt(playerId))) {
-                                        newTeam.players.push(parseInt(playerId));
+                            // 更新选手信息
+                            appData.players[index].name = playerName;
+                            appData.players[index].realName = playerRealName || playerName;
+                            appData.players[index].teamId = playerTeamId;
+                            appData.players[index].age = playerAge;
+                            appData.players[index].country = playerCountry;
+                            appData.players[index].rating = playerRating;
+                            appData.players[index].img = playerImg;
+                            appData.players[index].achievements = playerAchievements;
+                            appData.players[index].stats = {
+                                firepower,
+                                entrying,
+                                trading,
+                                opening,
+                                clutching,
+                                utility
+                            };
+                            
+                            // 如果更换了战队，更新战队成员列表
+                            if (oldTeamId !== playerTeamId) {
+                                // 从原战队移除
+                                if (oldTeamId) {
+                                    const oldTeam = getTeamById(oldTeamId);
+                                    if (oldTeam && oldTeam.players) {
+                                        oldTeam.players = oldTeam.players.filter(pId => pId !== parseInt(playerId));
+                                    }
+                                }
+                                
+                                // 添加到新战队
+                                if (playerTeamId) {
+                                    const newTeam = getTeamById(playerTeamId);
+                                    if (newTeam) {
+                                        if (!newTeam.players) newTeam.players = [];
+                                        if (!newTeam.players.includes(parseInt(playerId))) {
+                                            newTeam.players.push(parseInt(playerId));
+                                        }
                                     }
                                 }
                             }
+                            
+                            console.log('选手已更新:', appData.players[index]);
+                        }
+                    } else {
+                        // 添加新选手
+                        const newId = appData.players.length > 0 ? Math.max(...appData.players.map(p => p.id)) + 1 : 1;
+                        const newPlayer = {
+                            id: newId,
+                            name: playerName,
+                            realName: playerRealName || playerName,
+                            teamId: playerTeamId,
+                            age: playerAge,
+                            country: playerCountry,
+                            rating: playerRating,
+                            img: playerImg,
+                            achievements: playerAchievements,
+                            stats: {
+                                firepower,
+                                entrying,
+                                trading,
+                                opening,
+                                clutching,
+                                utility
+                            }
+                        };
+                        
+                        appData.players.push(newPlayer);
+                        console.log('新选手已添加:', newPlayer);
+                        
+                        // 添加到战队成员列表
+                        if (playerTeamId) {
+                            const team = getTeamById(playerTeamId);
+                            if (team) {
+                                if (!team.players) team.players = [];
+                                team.players.push(newId);
+                                console.log('选手已添加到战队:', team.name);
+                            }
                         }
                     }
-                } else {
-                    // 添加新选手
-                    const newId = appData.players.length > 0 ? Math.max(...appData.players.map(p => p.id)) + 1 : 1;
-                    const newPlayer = {
-                        id: newId,
-                        name: playerName,
-                        realName: playerRealName || playerName,
-                        teamId: playerTeamId,
-                        age: playerAge,
-                        country: playerCountry,
-                        rating: playerRating,
-                        img: playerImg,
-                        achievements: playerAchievements,
-                        stats: {
-                            firepower,
-                            entrying,
-                            trading,
-                            opening,
-                            clutching,
-                            utility
-                        }
-                    };
                     
-                    appData.players.push(newPlayer);
+                    // 保存数据并刷新
+                    saveData();
+                    loadAdminPlayersList();
+                    loadPlayers();
+                    loadAdminTeamsList();
+                    loadTeams();
                     
-                    // 添加到战队成员列表
-                    if (playerTeamId) {
-                        const team = getTeamById(playerTeamId);
-                        if (team) {
-                            if (!team.players) team.players = [];
-                            team.players.push(newId);
+                    // 重置表单
+                    this.reset();
+                    document.getElementById('player-id').value = '';
+                    imgPreview.innerHTML = '';
+                    document.getElementById('player-achievements').value = '';
+                    
+                    // 重置滑块值为默认值
+                    const defaultValues = { firepower: 50, entrying: 50, trading: 50, opening: 50, clutching: 50, utility: 50 };
+                    Object.keys(defaultValues).forEach(key => {
+                        const slider = document.getElementById(`player-${key}-input`);
+                        const valueSpan = document.getElementById(`${key}-value`);
+                        if (slider && valueSpan) {
+                            slider.value = defaultValues[key];
+                            valueSpan.textContent = defaultValues[key];
                         }
-                    }
+                    });
+                    
+                    document.getElementById('player-rating-input').value = 1.0;
+                    
+                    alert('选手已保存！');
+                    
+                } catch (error) {
+                    console.error('保存选手数据时出错:', error);
+                    alert('保存失败: ' + error.message);
                 }
-                
-                // 保存数据并刷新
-                saveData();
-                loadAdminPlayersList();
-                loadPlayers();
-                loadAdminTeamsList();
-                loadTeams();
-                
-                // 重置表单
-                this.reset();
-                document.getElementById('player-id').value = '';
-                imgPreview.innerHTML = '';
-                document.getElementById('player-achievements').value = '';
-                
-                // 重置滑块值为默认值
-                const defaultValues = { firepower: 50, entrying: 50, trading: 50, opening: 50, clutching: 50, utility: 50 };
-                Object.keys(defaultValues).forEach(key => {
-                    const slider = document.getElementById(`player-${key}-input`);
-                    const valueSpan = document.getElementById(`${key}-value`);
-                    if (slider && valueSpan) {
-                        slider.value = defaultValues[key];
-                        valueSpan.textContent = defaultValues[key];
-                    }
-                });
-                
-                document.getElementById('player-rating-input').value = 1.0;
-                
-                alert('选手已保存！');
-            });
-
-            // 重置选手表单
-            document.getElementById('reset-player-form').addEventListener('click', function() {
-                document.getElementById('player-form').reset();
-                document.getElementById('player-id').value = '';
-                document.getElementById('player-img-preview').innerHTML = '';
-                document.getElementById('player-achievements').value = '';
-                
-                // 重置滑块值为默认值
-                const defaultValues = { firepower: 50, entrying: 50, trading: 50, opening: 50, clutching: 50, utility: 50 };
-                Object.keys(defaultValues).forEach(key => {
-                    const slider = document.getElementById(`player-${key}-input`);
-                    const valueSpan = document.getElementById(`${key}-value`);
-                    if (slider && valueSpan) {
-                        slider.value = defaultValues[key];
-                        valueSpan.textContent = defaultValues[key];
-                    }
-                });
-                
-                document.getElementById('player-rating-input').value = 1.0;
             });
 
             // 赛事表单提交
