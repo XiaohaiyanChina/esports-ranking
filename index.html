@@ -2137,121 +2137,424 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             }
         }
 
-                        async function saveDataToSupabase() {
-            try {
-                console.log('开始保存数据到Supabase...');
-                
-                                // 准备数据，确保格式正确
-                const teamsData = appData.teams.map(team => ({
-                    id: team.id,
-                    name: team.name,
-                    rank: team.rank,
-                    points: team.points,
-                    coach: team.coach || null,
-                    logo: team.logo,
-                    achievements: Array.isArray(team.achievements) ? team.achievements : [],
-                    players: Array.isArray(team.players) ? team.players : []
-                }));
-                
-                // 注意：表列名是 'teamld' 而不是 'teamId'
-                const playersData = appData.players.map(player => ({
-                    id: player.id,
-                    name: player.name,
-                    teamld: player.teamId || null,  // 修改这里：teamld 而不是 teamId
-                    age: player.age || null,
-                    country: player.country || null,
-                    rating: player.rating || 1.0,
-                    img: player.img,
-                    achievements: Array.isArray(player.achievements) ? player.achievements : [],
-                    stats: player.stats || {}
-                }));
-                
-                const matchesData = appData.matches.map(match => ({
-                    id: match.id,
-                    tournament: match.tournament,
-                    team1Id: match.team1Id,
-                    team2Id: match.team2Id,
-                    score1: match.score1 || null,
-                    score2: match.score2 || null,
-                    date: match.date,
-                    time: match.time || null,
-                    type: match.type,
-                    stats: match.stats || {}
-                }));
-                
-                console.log('准备插入的数据:', { teamsData, playersData, matchesData });
-                
-                // 按顺序删除和插入，避免外键约束错误
-                // 先删除matches（引用teams和players）
-                const { error: deleteMatchesError } = await supabase
-                    .from('matches')
-                    .delete()
-                    .neq('id', 0);
-                
-                if (deleteMatchesError) {
-                    console.error('删除matches失败:', deleteMatchesError);
-                    throw new Error('删除matches失败: ' + deleteMatchesError.message);
-                }
-                
-                // 删除players
-                const { error: deletePlayersError } = await supabase
-                    .from('players')
-                    .delete()
-                    .neq('id', 0);
-                
-                if (deletePlayersError) {
-                    console.error('删除players失败:', deletePlayersError);
-                    throw new Error('删除players失败: ' + deletePlayersError.message);
-                }
-                
-                // 删除teams
-                const { error: deleteTeamsError } = await supabase
-                    .from('teams')
-                    .delete()
-                    .neq('id', 0);
-                
-                if (deleteTeamsError) {
-                    console.error('删除teams失败:', deleteTeamsError);
-                    throw new Error('删除teams失败: ' + deleteTeamsError.message);
-                }
-                
-                // 按顺序插入，先teams，再players，最后matches
-                const { error: teamsError } = await supabase
-                    .from('teams')
-                    .insert(teamsData);
-                
-                if (teamsError) {
-                    console.error('插入teams失败:', teamsError);
-                    throw new Error('插入teams失败: ' + teamsError.message);
-                }
-                
-                const { error: playersError } = await supabase
-                    .from('players')
-                    .insert(playersData);
-                
-                if (playersError) {
-                    console.error('插入players失败:', playersError);
-                    throw new Error('插入players失败: ' + playersError.message);
-                }
-                
-                const { error: matchesError } = await supabase
-                    .from('matches')
-                    .insert(matchesData);
-                
-                if (matchesError) {
-                    console.error('插入matches失败:', matchesError);
-                    throw new Error('插入matches失败: ' + matchesError.message);
-                }
-                
-                console.log('数据已成功保存到 Supabase');
-                return true;
-                
-            } catch (error) {
-                console.error('保存到 Supabase 失败:', error);
-                alert('保存到云端失败: ' + error.message);
-                return false;
-            }
+                        // 替换原有的 saveDataToSupabase 函数
+async function saveDataToSupabase() {
+    try {
+        console.log('开始保存数据到Supabase...');
+        
+        // 准备数据，确保格式正确
+        const teamsData = appData.teams.map(team => ({
+            id: team.id,
+            name: team.name,
+            rank: team.rank,
+            points: team.points,
+            coach: team.coach || null,
+            logo: team.logo,
+            achievements: Array.isArray(team.achievements) ? team.achievements : [],
+            players: Array.isArray(team.players) ? team.players : []
+        }));
+        
+        // 注意：表列名是 'teamld' 而不是 'teamId'
+        const playersData = appData.players.map(player => {
+            const playerData = {
+                id: player.id,
+                name: player.name,
+                teamld: player.teamId || null,  // 修改这里：teamld 而不是 teamId
+                age: player.age || null,
+                country: player.country || null,
+                rating: player.rating || 1.0,
+                img: player.img,
+                achievements: Array.isArray(player.achievements) ? player.achievements : [],
+                stats: player.stats || {}
+            };
+            
+            // 如果数据库中没有realName字段，我们不保存
+            // 避免因为数据库表结构不一致导致的错误
+            return playerData;
+        });
+        
+        const matchesData = appData.matches.map(match => ({
+            id: match.id,
+            tournament: match.tournament,
+            team1Id: match.team1Id,
+            team2Id: match.team2Id,
+            score1: match.score1 || null,
+            score2: match.score2 || null,
+            date: match.date,
+            time: match.time || null,
+            type: match.type,
+            stats: match.stats || {}
+        }));
+        
+        console.log('准备保存的数据:', { teamsData, playersData, matchesData });
+        
+        // 使用 upsert（更新或插入）操作，而不是先删除再插入
+        // 这样可以避免数据丢失
+        
+        // 1. 保存战队数据
+        const { error: teamsError } = await supabase
+            .from('teams')
+            .upsert(teamsData, {
+                onConflict: 'id',
+                ignoreDuplicates: false
+            });
+        
+        if (teamsError) {
+            console.error('保存teams失败:', teamsError);
+            throw new Error('保存teams失败: ' + teamsError.message);
         }
+        
+        // 2. 保存选手数据
+        const { error: playersError } = await supabase
+            .from('players')
+            .upsert(playersData, {
+                onConflict: 'id',
+                ignoreDuplicates: false
+            });
+        
+        if (playersError) {
+            console.error('保存players失败:', playersError);
+            throw new Error('保存players失败: ' + playersError.message);
+        }
+        
+        // 3. 保存赛事数据
+        const { error: matchesError } = await supabase
+            .from('matches')
+            .upsert(matchesData, {
+                onConflict: 'id',
+                ignoreDuplicates: false
+            });
+        
+        if (matchesError) {
+            console.error('保存matches失败:', matchesError);
+            throw new Error('保存matches失败: ' + matchesError.message);
+        }
+        
+        console.log('数据已成功保存到 Supabase');
+        return true;
+        
+    } catch (error) {
+        console.error('保存到 Supabase 失败:', error);
+        
+        // 不弹窗，避免干扰用户操作
+        // 只在控制台记录错误
+        return false;
+    }
+}
+
+// 新增：定期从云端同步数据的函数
+async function syncDataFromSupabase() {
+    try {
+        console.log('开始从Supabase同步数据...');
+        
+        const { data: teams, error: teamsError } = await supabase
+            .from('teams')
+            .select('*')
+            .order('rank', { ascending: true });
+        
+        const { data: players, error: playersError } = await supabase
+            .from('players')
+            .select('*')
+            .order('rating', { ascending: false });
+        
+        const { data: matches, error: matchesError } = await supabase
+            .from('matches')
+            .select('*')
+            .order('date', { ascending: false });
+        
+        if (teamsError || playersError || matchesError) {
+            console.error('从Supabase同步数据失败:', teamsError, playersError, matchesError);
+            return false;
+        }
+        
+        // 如果云端有数据，则使用云端数据
+        if (teams && teams.length > 0) {
+            appData.teams = teams;
+            console.log('同步teams:', teams.length);
+        }
+        
+        if (players && players.length > 0) {
+            // 处理players数据：将teamld字段映射为teamId
+            appData.players = players.map(player => {
+                // 将teamld字段映射为teamId
+                player.teamId = player.teamld;
+                // 删除原始的teamld字段以避免混淆
+                delete player.teamld;
+                return player;
+            });
+            console.log('同步players:', players.length);
+        }
+        
+        if (matches && matches.length > 0) {
+            appData.matches = matches;
+            console.log('同步matches:', matches.length);
+        }
+        
+        // 确保数据完整性
+        validateData();
+        
+        // 保存到本地存储作为缓存
+        localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
+        
+        console.log('从Supabase同步数据成功');
+        return true;
+        
+    } catch (error) {
+        console.error('Supabase同步数据错误:', error);
+        return false;
+    }
+}
+
+// 修改 initData 函数，添加定期同步
+function initData() {
+    // 检查管理员密码设置
+    if (!localStorage.getItem('adminPassword')) {
+        localStorage.setItem('adminPassword', 'LD123455');
+        localStorage.setItem('adminSecurityCode', '762ER29781CS');
+    }
+    
+    // 检查管理员认证状态
+    appData.adminAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
+    
+    // 首先尝试从本地存储加载
+    const savedData = localStorage.getItem('ldtvCsgoData');
+    if (savedData) {
+        try {
+            const parsed = JSON.parse(savedData);
+            appData.teams = parsed.teams || [];
+            appData.players = parsed.players || [];
+            appData.matches = parsed.matches || [];
+            console.log('从本地存储加载数据成功');
+            
+            // 确保数据完整性
+            validateData();
+        } catch (e) {
+            console.error('加载本地存储数据失败:', e);
+            // 如果本地数据损坏，使用默认数据
+            loadDefaultData();
+        }
+    } else {
+        loadDefaultData();
+    }
+    
+    // 异步从Supabase加载数据，不阻塞页面渲染
+    setTimeout(() => {
+        syncDataFromSupabase().then(success => {
+            if (success) {
+                console.log('云端数据同步完成');
+                // 重新渲染页面
+                if (document.querySelector('.page.active').id === 'home-page') {
+                    loadMatches();
+                } else if (document.querySelector('.page.active').id === 'teams-page') {
+                    loadTeams();
+                } else if (document.querySelector('.page.active').id === 'players-page') {
+                    loadPlayers();
+                } else if (document.querySelector('.page.active').id === 'admin-page') {
+                    loadAdminData();
+                }
+            }
+        });
+    }, 1000);
+}
+
+// 修改 saveData 函数，添加自动同步
+function saveData() {
+    try {
+        // 先保存到本地存储
+        localStorage.setItem('ldtvCsgoData', JSON.stringify(appData));
+        console.log('数据已保存到本地存储');
+        
+        // 异步保存到Supabase
+        if (typeof supabase !== 'undefined') {
+            setTimeout(() => {
+                saveDataToSupabase().then(success => {
+                    if (success) {
+                        console.log('数据同步到云端成功');
+                    } else {
+                        console.warn('数据保存到本地，但云端同步失败');
+                    }
+                }).catch(error => {
+                    console.error('Supabase保存异常:', error);
+                });
+            }, 500);
+        }
+    } catch (error) {
+        console.error('保存数据失败:', error);
+    }
+}
+
+// 新增：删除数据的函数，单独处理删除操作
+async function deleteFromSupabase(table, id) {
+    try {
+        const { error } = await supabase
+            .from(table)
+            .delete()
+            .eq('id', id);
+        
+        if (error) {
+            console.error(`删除 ${table} ID ${id} 失败:`, error);
+            return false;
+        }
+        
+        console.log(`成功删除 ${table} ID ${id}`);
+        return true;
+    } catch (error) {
+        console.error(`删除 ${table} 操作异常:`, error);
+        return false;
+    }
+}
+
+// 修改批量删除函数，单独处理每个删除操作
+function batchDeleteTeams() {
+    const checkboxes = document.querySelectorAll('.team-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('请先选择要删除的战队');
+        return;
+    }
+    
+    if (!confirm(`确定要删除选中的 ${checkboxes.length} 个战队吗？战队删除后，选手将变为自由选手。`)) {
+        return;
+    }
+    
+    const teamIds = [];
+    checkboxes.forEach(cb => {
+        teamIds.push(parseInt(cb.getAttribute('data-team-id')));
+    });
+    
+    // 逐个删除，避免批量操作失败
+    teamIds.forEach(async (teamId) => {
+        // 先更新本地数据
+        const teamIndex = appData.teams.findIndex(t => t.id === teamId);
+        if (teamIndex !== -1) {
+            // 将原战队选手设为自由选手
+            appData.players.forEach(player => {
+                if (player.teamId === teamId) {
+                    player.teamId = null;
+                }
+            });
+            
+            // 删除与该战队相关的比赛
+            appData.matches = appData.matches.filter(m => m.team1Id !== teamId && m.team2Id !== teamId);
+            
+            // 删除战队
+            appData.teams.splice(teamIndex, 1);
+        }
+        
+        // 异步删除云端数据
+        deleteFromSupabase('teams', teamId);
+    });
+    
+    // 保存数据并刷新
+    saveData();
+    setTimeout(() => {
+        loadAdminTeamsList();
+        loadAdminPlayersList();
+        loadAdminMatchesList();
+        loadTeams();
+        
+        // 取消全选
+        document.getElementById('select-all-teams').checked = false;
+        
+        alert(`成功删除 ${teamIds.length} 个战队`);
+    }, 1000);
+}
+
+// 类似的，修改选手和赛事的批量删除函数
+function batchDeletePlayers() {
+    const checkboxes = document.querySelectorAll('.player-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('请先选择要删除的选手');
+        return;
+    }
+    
+    if (!confirm(`确定要删除选中的 ${checkboxes.length} 个选手吗？`)) {
+        return;
+    }
+    
+    const playerIds = [];
+    checkboxes.forEach(cb => {
+        playerIds.push(parseInt(cb.getAttribute('data-player-id')));
+    });
+    
+    playerIds.forEach(async (playerId) => {
+        // 更新本地数据
+        const playerIndex = appData.players.findIndex(p => p.id === playerId);
+        if (playerIndex !== -1) {
+            // 从战队中移除该选手
+            appData.teams.forEach(team => {
+                if (team.players) {
+                    team.players = team.players.filter(pId => pId !== playerId);
+                }
+            });
+            
+            // 从比赛数据中移除该选手
+            appData.matches.forEach(match => {
+                if (match.stats) {
+                    if (match.stats.team1 && match.stats.team1[playerId]) {
+                        delete match.stats.team1[playerId];
+                    }
+                    if (match.stats.team2 && match.stats.team2[playerId]) {
+                        delete match.stats.team2[playerId];
+                    }
+                }
+            });
+            
+            // 删除选手
+            appData.players.splice(playerIndex, 1);
+        }
+        
+        // 异步删除云端数据
+        deleteFromSupabase('players', playerId);
+    });
+    
+    // 保存数据并刷新
+    saveData();
+    setTimeout(() => {
+        loadAdminPlayersList();
+        loadPlayers();
+        loadAdminTeamsList();
+        
+        document.getElementById('select-all-players').checked = false;
+        
+        alert(`成功删除 ${playerIds.length} 个选手`);
+    }, 1000);
+}
+
+function batchDeleteMatches() {
+    const checkboxes = document.querySelectorAll('.match-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('请先选择要删除的赛事');
+        return;
+    }
+    
+    if (!confirm(`确定要删除选中的 ${checkboxes.length} 个赛事吗？`)) {
+        return;
+    }
+    
+    const matchIds = [];
+    checkboxes.forEach(cb => {
+        matchIds.push(parseInt(cb.getAttribute('data-match-id')));
+    });
+    
+    matchIds.forEach(async (matchId) => {
+        // 更新本地数据
+        appData.matches = appData.matches.filter(m => m.id !== matchId);
+        
+        // 异步删除云端数据
+        deleteFromSupabase('matches', matchId);
+    });
+    
+    // 保存数据并刷新
+    saveData();
+    setTimeout(() => {
+        loadAdminMatchesList();
+        loadMatches();
+        
+        document.getElementById('select-all-matches').checked = false;
+        
+        alert(`成功删除 ${matchIds.length} 个赛事`);
+    }, 1000);
+}
 
 // 新增：从本地存储加载数据的辅助函数
 function loadFromLocalStorage() {
