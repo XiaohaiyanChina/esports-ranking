@@ -319,17 +319,35 @@
             supabaseClient: null
         };
 
+        function getStorage() {
+            try {
+                return localStorage || {};
+            } catch (e) {
+                return { getItem: () => null, setItem: () => {} };
+            }
+        }
+
         function loadConfig() {
-            const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
-            if (saved) {
-                const config = JSON.parse(saved);
-                CONFIG.supabaseUrl = config.supabaseUrl || null;
-                CONFIG.supabaseKey = config.supabaseKey || null;
-                document.getElementById('supabase-url').value = CONFIG.supabaseUrl || '';
-                document.getElementById('supabase-key').value = CONFIG.supabaseKey || '';
-                if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
-                    initSupabase();
+            try {
+                const storage = getStorage();
+                const saved = storage.getItem(CONFIG.STORAGE_KEY);
+                if (saved) {
+                    const config = JSON.parse(saved);
+                    CONFIG.supabaseUrl = config.supabaseUrl || null;
+                    CONFIG.supabaseKey = config.supabaseKey || null;
+                    
+                    const urlInput = document.getElementById('supabase-url');
+                    const keyInput = document.getElementById('supabase-key');
+                    
+                    if (urlInput) urlInput.value = CONFIG.supabaseUrl || '';
+                    if (keyInput) keyInput.value = CONFIG.supabaseKey || '';
+                    
+                    if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
+                        initSupabase();
+                    }
                 }
+            } catch (e) {
+                console.warn('无法读取本地配置:', e);
             }
             updateConnectionStatus();
         }
@@ -345,10 +363,16 @@
             
             CONFIG.supabaseUrl = url;
             CONFIG.supabaseKey = key;
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
-                supabaseUrl: url,
-                supabaseKey: key
-            }));
+            
+            try {
+                const storage = getStorage();
+                storage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
+                    supabaseUrl: url,
+                    supabaseKey: key
+                }));
+            } catch (e) {
+                console.warn('无法保存配置到本地存储:', e);
+            }
             
             initSupabase();
             updateConnectionStatus();
@@ -357,6 +381,10 @@
 
         function initSupabase() {
             try {
+                if (!CONFIG.supabaseUrl || !CONFIG.supabaseKey) {
+                    console.warn('Supabase URL 或 KEY 未配置');
+                    return;
+                }
                 CONFIG.supabaseClient = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
                 console.log('Supabase 客户端已初始化');
             } catch (error) {
@@ -371,28 +399,40 @@
             }
             
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
                 const { data, error } = await CONFIG.supabaseClient
                     .from('teams')
                     .select('count')
-                    .limit(1);
+                    .limit(1)
+                    .abortSignal(controller.signal);
+                
+                clearTimeout(timeoutId);
                 
                 if (error) throw error;
                 
-                document.getElementById('connection-status').innerHTML = `
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> 
-                        Supabase 连接成功！数据已就绪。
-                    </div>
-                `;
+                const statusEl = document.getElementById('connection-status');
+                if (statusEl) {
+                    statusEl.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> 
+                            Supabase 连接成功！数据已就绪。
+                        </div>
+                    `;
+                }
                 
                 loadAllData();
             } catch (error) {
-                document.getElementById('connection-status').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-times-circle"></i> 
-                        连接失败: ${error.message}
-                    </div>
-                `;
+                const statusEl = document.getElementById('connection-status');
+                if (statusEl) {
+                    statusEl.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle"></i> 
+                            连接失败: ${error.name === 'AbortError' ? '连接超时，请检查网络' : error.message}
+                        </div>
+                    `;
+                }
             }
         }
 
