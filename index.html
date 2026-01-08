@@ -1714,6 +1714,69 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
             modal.classList.add('active');
         }
 
+        async function uploadToSupabaseStorage(file, bucket = 'images') {
+            if (!CONFIG.supabaseClient) {
+                alert('请先配置 Supabase 数据库连接');
+                return null;
+            }
+            
+            try {
+                const fileName = `${Date.now()}_${file.name}`;
+                const filePath = `${bucket}/${fileName}`;
+                
+                const { data, error } = await CONFIG.supabaseClient
+                    .storage
+                    .from(filePath)
+                    .upload(file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (error) throw error;
+                
+                const { data: { publicUrl } } = await CONFIG.supabaseClient
+                    .storage
+                    .from(filePath)
+                    .createSignedUrl('', 60);
+                
+                return publicUrl;
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('图片上传失败: ' + error.message);
+                return null;
+            }
+        }
+
+        function handleTeamLogoUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('图片大小不能超过 5MB');
+                return;
+            }
+            
+            const preview = document.getElementById('team-logo-img');
+            preview.src = URL.createObjectURL(file);
+            document.getElementById('team-logo-preview').style.display = 'block';
+        }
+
+        function handlePlayerImgUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('图片大小不能超过 5MB');
+                return;
+            }
+            
+            const preview = document.getElementById('player-img-img');
+            preview.src = URL.createObjectURL(file);
+            document.getElementById('player-img-preview').style.display = 'block';
+        }
+
         async function saveTeam() {
             if (!CONFIG.supabaseClient) {
                 alert('请先配置 Supabase 数据库连接');
@@ -1721,9 +1784,21 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
             }
             
             const teamId = document.getElementById('team-id').value;
+            const logoFileInput = document.getElementById('team-logo-file');
+            
+            let logoUrl = document.getElementById('team-logo').value.trim();
+            
+            // 如果选择了文件，上传到 Supabase Storage
+            if (logoFileInput.files.length > 0) {
+                const uploadedUrl = await uploadToSupabaseStorage(logoFileInput.files[0]);
+                if (uploadedUrl) {
+                    logoUrl = uploadedUrl;
+                }
+            }
+            
             const teamData = {
                 name: document.getElementById('team-name').value,
-                logo: document.getElementById('team-logo').value,
+                logo: logoUrl,
                 points: parseInt(document.getElementById('team-points').value) || 0,
                 coach: document.getElementById('team-coach').value,
                 updated_at: new Date().toISOString()
@@ -1819,6 +1894,18 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
             }
             
             const playerId = document.getElementById('player-id').value;
+            const imgFileInput = document.getElementById('player-img-file');
+            
+            let imgUrl = document.getElementById('player-img').value.trim();
+            
+            // 如果选择了文件，上传到 Supabase Storage
+            if (imgFileInput.files.length > 0) {
+                const uploadedUrl = await uploadToSupabaseStorage(imgFileInput.files[0]);
+                if (uploadedUrl) {
+                    imgUrl = uploadedUrl;
+                }
+            }
+            
             const playerData = {
                 name: document.getElementById('player-name').value,
                 real_name: document.getElementById('player-real-name').value,
@@ -1826,7 +1913,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
                 age: document.getElementById('player-age').value ? parseInt(document.getElementById('player-age').value) : null,
                 country: document.getElementById('player-country').value,
                 rating: parseFloat(document.getElementById('player-rating').value) || 1.00,
-                img: document.getElementById('player-img').value,
+                img: imgUrl,
                 updated_at: new Date().toISOString()
             };
             
@@ -2201,8 +2288,19 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
                         <input type="text" id="team-name" class="form-control" placeholder="请输入战队名称" required>
                     </div>
                     <div class="form-group">
-                        <label>Logo URL</label>
-                        <input type="text" id="team-logo" class="form-control" placeholder="战队Logo图片链接">
+                        <label>战队Logo</label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <input type="text" id="team-logo" class="form-control" placeholder="或上传图片" style="flex: 1;">
+                            <div style="position: relative;">
+                                <input type="file" id="team-logo-file" accept="image/*" onchange="handleTeamLogoUpload(this)" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('team-logo-file').click()">
+                                    <i class="fas fa-upload"></i> 上传图片
+                                </button>
+                            </div>
+                        </div>
+                        <div id="team-logo-preview" style="display: none; margin-top: 10px; text-align: center;">
+                            <img id="team-logo-img" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid var(--light-color);">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>积分</label>
@@ -2257,8 +2355,19 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
                         <input type="number" id="player-rating" class="form-control" placeholder="Rating" step="0.01" value="1.00">
                     </div>
                     <div class="form-group">
-                        <label>头像 URL</label>
-                        <input type="text" id="player-img" class="form-control" placeholder="选手头像图片链接">
+                        <label>头像</label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <input type="text" id="player-img" class="form-control" placeholder="或上传图片" style="flex: 1;">
+                            <div style="position: relative;">
+                                <input type="file" id="player-img-file" accept="image/*" onchange="handlePlayerImgUpload(this)" style="display: none;">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('player-img-file').click()">
+                                    <i class="fas fa-upload"></i> 上传图片
+                                </button>
+                            </div>
+                        </div>
+                        <div id="player-img-preview" style="display: none; margin-top: 10px; text-align: center;">
+                            <img id="player-img-img" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid var(--light-color);">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
