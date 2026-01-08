@@ -387,8 +387,12 @@
                 console.warn('无法保存配置到本地存储:', e);
             }
             
-            initSupabase();
-            updateConnectionStatus();
+            // 延迟初始化，避免阻塞
+            setTimeout(() => {
+                initSupabase();
+                updateConnectionStatus();
+            }, 100);
+            
             alert('配置已保存！请点击"测试连接"验证连接状态。');
         }
 
