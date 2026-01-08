@@ -595,6 +595,11 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);`;
                 .single();
             
             if (error) throw error;
+            
+            if (data) {
+                appData.teams.push(data);
+            }
+            
             return data;
         }
 
@@ -621,6 +626,11 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);`;
                 .single();
             
             if (error) throw error;
+            
+            if (data) {
+                appData.players.push(data);
+            }
+            
             return data;
         }
 
