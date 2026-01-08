@@ -342,9 +342,10 @@
                     if (urlInput) urlInput.value = CONFIG.supabaseUrl || '';
                     if (keyInput) keyInput.value = CONFIG.supabaseKey || '';
                     
-                    if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
-                        initSupabase();
-                    }
+                    // 只在用户手动测试连接时才初始化Supabase
+                    // if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
+                    //     initSupabase();
+                    // }
                 }
             } catch (e) {
                 console.warn('无法读取本地配置:', e);
@@ -358,6 +359,18 @@
             
             if (!url || !key) {
                 alert('请填写完整的 Supabase 配置信息');
+                return;
+            }
+            
+            // 验证URL格式
+            if (!url.includes('supabase.co')) {
+                alert('请输入正确的 Supabase URL');
+                return;
+            }
+            
+            // 验证Key格式
+            if (!key.startsWith('eyJ')) {
+                alert('请输入正确的 Supabase ANON KEY');
                 return;
             }
             
@@ -376,7 +389,7 @@
             
             initSupabase();
             updateConnectionStatus();
-            alert('配置已保存！');
+            alert('配置已保存！请点击"测试连接"验证连接状态。');
         }
 
         function initSupabase() {
@@ -437,8 +450,11 @@
         }
 
         function updateConnectionStatus() {
+            const statusEl = document.getElementById('connection-status');
+            if (!statusEl) return;
+            
             if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
-                document.getElementById('connection-status').innerHTML = `
+                statusEl.innerHTML = `
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> 
                         Supabase 已配置。点击"测试连接"验证连接状态。
@@ -2155,9 +2171,13 @@ CREATE INDEX IF NOT EXISTS idx_matches_type ON matches(type);
         }
 
         function initApp() {
-            loadConfig();
-            initEventListeners();
-            switchPage('home');
+            try {
+                loadConfig();
+                initEventListeners();
+                switchPage('home');
+            } catch (error) {
+                console.error('应用初始化失败:', error);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initApp);
